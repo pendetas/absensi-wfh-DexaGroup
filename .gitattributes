@@ -1,0 +1,5 @@
+# Normalisasi akhir baris ke LF (konsisten antara Windows, macOS, Linux/Docker)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment (rahasia jangan di-commit, pakai .env.example sebagai contoh)
+.env
+.env.local
+
+# Foto upload absensi
+**/uploads/*
+!**/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Test coverage
+coverage/

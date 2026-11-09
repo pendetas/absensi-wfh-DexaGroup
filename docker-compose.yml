@@ -1,0 +1,33 @@
+# Docker Compose untuk Sistem Absensi WFH.
+#
+# Development : `docker compose up -d mysql`  -> hanya database, service NestJS dijalankan dengan npm
+# Full stack  : `docker compose up --build`  -> (service backend & frontend ditambahkan di tahap akhir)
+#
+# Nilai ${...} dibaca otomatis dari file .env di folder ini.
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dexa-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Jakarta
+    command: ["--default-time-zone=+07:00"]
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # Cek lewat TCP (127.0.0.1), bukan socket: server sementara saat inisialisasi
+      # pertama tidak membuka jaringan, jadi status "healthy" baru muncul saat MySQL benar-benar siap.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:
