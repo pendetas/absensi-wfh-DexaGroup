@@ -1,4 +1,4 @@
-# Normalisasi akhir baris ke LF (konsisten antara Windows, macOS, Linux/Docker)
+# LF everywhere so files behave the same on Windows and inside Linux containers
 * text=auto eol=lf
 *.png binary
 *.jpg binary

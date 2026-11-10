@@ -8,10 +8,7 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 
-/**
- * Tabel `departments`: master data departemen.
- * Dipisah dari `employees` supaya nama departemen tidak diketik berulang (normalisasi).
- */
+/** Separate table so department names are stored once and stay consistent. */
 @Entity('departments')
 export class Department {
   @PrimaryGeneratedColumn()
@@ -20,7 +17,6 @@ export class Department {
   @Column({ length: 100, unique: true })
   name: string;
 
-  // Relasi balik: satu departemen punya banyak karyawan (tidak membuat kolom baru).
   @OneToMany(() => Employee, (employee) => employee.department)
   employees: Employee[];
 

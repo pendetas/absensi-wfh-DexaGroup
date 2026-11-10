@@ -2,12 +2,8 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * Memuat file .env ke process.env SEBELUM aplikasi Nest dibuat,
- * supaya main.ts bisa membaca port/host dari environment.
- *
- * Urutan pencarian: `backend/.env` lalu `../.env` (root repo).
- * Variabel yang sudah ada di environment (misalnya dari docker-compose)
- * TIDAK ditimpa, jadi konfigurasi Docker selalu menang.
+ * Runs before Nest boots so main.ts can read ports. Checks backend/.env, then the repo root.
+ * Variables already set (e.g. by docker-compose) are not overwritten.
  */
 export function loadEnv(): void {
   for (const file of ['.env', '../.env']) {

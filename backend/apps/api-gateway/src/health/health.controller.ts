@@ -1,5 +1,6 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags } from '@nestjs/swagger';
 import { firstValueFrom, timeout } from 'rxjs';
 import {
   ATTENDANCE_PATTERNS,
@@ -9,12 +10,13 @@ import {
   EMPLOYEE_PATTERNS,
   EMPLOYEE_SERVICE,
 } from '@app/common';
+import { Public } from '../common/decorators/public.decorator';
 
-/**
- * GET /api/health
- * Mengecek apakah gateway bisa menjangkau setiap microservice,
- * dan apakah setiap service bisa menjangkau MySQL.
- */
+type ServiceHealth = { status: string; [key: string]: unknown };
+
+/** Checks that the gateway reaches each service and each service reaches MySQL. */
+@ApiTags('Health')
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(
@@ -33,12 +35,13 @@ export class HealthController {
     return { gateway: 'ok', services: { auth, employee, attendance } };
   }
 
-  private async ping(client: ClientProxy, pattern: string) {
+  private async ping(client: ClientProxy, pattern: string): Promise<ServiceHealth> {
     try {
-      // client.send() mengembalikan Observable (RxJS); firstValueFrom mengubahnya jadi Promise.
-      return await firstValueFrom(client.send(pattern, {}).pipe(timeout(3000)));
+      return await firstValueFrom(client.send<ServiceHealth>(pattern, {}).pipe(timeout(3000)));
     } catch (error) {
-      return { status: 'down', error: error instanceof Error ? error.message : String(error) };
+      // TCP connection errors such as ECONNREFUSED carry a code but no message.
+      const { code, message } = (error ?? {}) as { code?: string; message?: string };
+      return { status: 'down', error: message || code || 'Layanan tidak dapat dijangkau' };
     }
   }
 }

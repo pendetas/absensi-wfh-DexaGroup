@@ -5,11 +5,11 @@ node_modules/
 dist/
 build/
 
-# Environment (rahasia jangan di-commit, pakai .env.example sebagai contoh)
+# Secrets; .env.example is the committed template
 .env
 .env.local
 
-# Foto upload absensi
+# Attendance photos
 **/uploads/*
 !**/uploads/.gitkeep
 

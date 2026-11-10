@@ -9,16 +9,13 @@ import {
 } from 'typeorm';
 import { Department } from './department.entity';
 
-/**
- * Tabel `employees`: data master karyawan yang dikelola HR.
- * Data login (password, role) TIDAK disimpan di sini, tetapi di tabel `users` milik auth-service.
- */
+/** HR master data. Credentials and role live in auth-service's users table. */
 @Entity('employees')
 export class Employee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // NIK / nomor induk karyawan, mis. "EMP001".
+  // Company employee number (NIK), e.g. "EMP001".
   @Column({ name: 'employee_code', length: 20, unique: true })
   employeeCode: string;
 
@@ -31,12 +28,9 @@ export class Employee {
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null;
 
-  // Kolom FK yang sebenarnya di database.
   @Column({ name: 'department_id' })
   departmentId: number;
 
-  // Relasi ke departments: membuat FOREIGN KEY employees.department_id -> departments.id.
-  // RESTRICT: departemen tidak bisa dihapus selama masih punya karyawan.
   @ManyToOne(() => Department, (department) => department.employees, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'department_id' })
   department: Department;
@@ -44,11 +38,11 @@ export class Employee {
   @Column({ length: 100 })
   position: string;
 
-  // Tipe DATE dikembalikan sebagai string 'YYYY-MM-DD' (aman dari masalah timezone).
+  // Kept as a 'YYYY-MM-DD' string so no timezone conversion can shift the date.
   @Column({ name: 'join_date', type: 'date' })
   joinDate: string;
 
-  // Karyawan tidak dihapus permanen; cukup dinonaktifkan supaya riwayat absensi tetap utuh.
+  // Employees are deactivated, never deleted, so attendance history stays intact.
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
