@@ -20,8 +20,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         // Matches the MySQL server timezone (WIB).
         timezone: config.get<string>('APP_TIMEZONE', '+07:00'),
         autoLoadEntities: true,
-        // Development only: alters tables to match entities on startup.
-        synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true',
+        // Schema changes go through migrations (npm run db:migrate), never auto-sync.
+        synchronize: false,
         retryAttempts: 10,
         retryDelay: 3000,
       }),

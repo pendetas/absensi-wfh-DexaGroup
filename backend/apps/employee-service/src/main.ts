@@ -14,6 +14,6 @@ async function bootstrap() {
   });
 
   await app.listen();
-  new Logger('EmployeeService').log(`employee-service mendengarkan di TCP port ${port}`);
+  new Logger('EmployeeService').log(`employee-service listening on TCP port ${port}`);
 }
 void bootstrap();

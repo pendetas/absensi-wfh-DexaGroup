@@ -1,6 +1,8 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { loadEnv } from '@app/common';
 import { GatewayModule } from './gateway.module';
 
@@ -10,17 +12,23 @@ async function bootstrap() {
   const app = await NestFactory.create(GatewayModule);
 
   app.setGlobalPrefix('api');
-  app.enableCors(); // The React apps are served from other ports.
+  app.use(helmet());
+  app.use(cookieParser());
+  // Credentials are allowed so the session cookie works, which requires an explicit origin list.
+  app.enableCors({
+    origin: (process.env.CORS_ORIGINS ?? '').split(',').map((origin) => origin.trim()),
+    credentials: true,
+  });
 
   // whitelist drops body fields the DTO doesn't declare, e.g. a smuggled "role".
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Dexa - Sistem Absensi WFH')
+    .setTitle('Dexa WFH Attendance API')
     .setDescription(
-      'API Gateway untuk aplikasi absensi karyawan dan monitoring HR.\n\n' +
-        'Cara mencoba: jalankan **POST /api/auth/login**, salin `accessToken`, ' +
-        'klik tombol **Authorize**, lalu tempel token tersebut.',
+      'API gateway for the employee attendance app and the HR monitoring app.\n\n' +
+        'To try it: call **POST /api/auth/login** (e.g. `hr@dexa.test` / `Password123!`), ' +
+        'copy `accessToken`, click **Authorize** and paste it.',
     )
     .setVersion('1.0')
     .addBearerAuth()
@@ -32,7 +40,7 @@ async function bootstrap() {
   const port = Number(process.env.GATEWAY_PORT ?? 3000);
   await app.listen(port);
   const logger = new Logger('Gateway');
-  logger.log(`API gateway berjalan di http://localhost:${port}/api`);
-  logger.log(`Dokumentasi Swagger di http://localhost:${port}/api/docs`);
+  logger.log(`API gateway on http://localhost:${port}/api`);
+  logger.log(`Swagger docs on http://localhost:${port}/api/docs`);
 }
 void bootstrap();

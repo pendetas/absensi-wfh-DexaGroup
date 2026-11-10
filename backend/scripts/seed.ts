@@ -1,14 +1,13 @@
 /**
- * Sample data for development (`npm run seed`). Idempotent: rows are matched on unique columns.
- * Every sample account uses SEED_PASSWORD.
+ * Sample data for development (`npm run db:seed`, after `npm run db:migrate`).
+ * Idempotent: rows are matched on unique columns. Every sample account uses SEED_PASSWORD.
  */
 import { hash } from 'bcryptjs';
-import { DataSource } from 'typeorm';
-import { loadEnv, Role } from '@app/common';
+import { Role } from '@app/common';
+import dataSource from '../database/data-source';
 import { Department } from '../apps/employee-service/src/entities/department.entity';
 import { Employee } from '../apps/employee-service/src/entities/employee.entity';
 import { User } from '../apps/auth-service/src/entities/user.entity';
-import { Attendance } from '../apps/attendance-service/src/entities/attendance.entity';
 
 const SEED_PASSWORD = 'Password123!';
 
@@ -19,7 +18,7 @@ const EMPLOYEES = [
     employeeCode: 'EMP001',
     fullName: 'Rina Wijaya',
     email: 'hr@dexa.test',
-    phone: '081200000001',
+    phone: '+6281200000001',
     department: 'Human Resources',
     position: 'HR Manager',
     joinDate: '2021-03-01',
@@ -29,7 +28,7 @@ const EMPLOYEES = [
     employeeCode: 'EMP002',
     fullName: 'Budi Santoso',
     email: 'budi@dexa.test',
-    phone: '081200000002',
+    phone: '+6281200000002',
     department: 'Engineering',
     position: 'Software Engineer',
     joinDate: '2022-01-10',
@@ -39,7 +38,7 @@ const EMPLOYEES = [
     employeeCode: 'EMP003',
     fullName: 'Siti Rahmawati',
     email: 'siti@dexa.test',
-    phone: '081200000003',
+    phone: '+6281200000003',
     department: 'Finance',
     position: 'Financial Analyst',
     joinDate: '2022-06-15',
@@ -49,7 +48,7 @@ const EMPLOYEES = [
     employeeCode: 'EMP004',
     fullName: 'Andi Pratama',
     email: 'andi@dexa.test',
-    phone: '081200000004',
+    phone: '+6281200000004',
     department: 'Marketing',
     position: 'Digital Marketing Specialist',
     joinDate: '2023-02-01',
@@ -59,7 +58,7 @@ const EMPLOYEES = [
     employeeCode: 'EMP005',
     fullName: 'Dewi Lestari',
     email: 'dewi@dexa.test',
-    phone: '081200000005',
+    phone: '+6281200000005',
     department: 'Engineering',
     position: 'QA Engineer',
     joinDate: '2023-08-21',
@@ -68,22 +67,11 @@ const EMPLOYEES = [
 ];
 
 async function seed() {
-  loadEnv();
-
-  const dataSource = new DataSource({
-    type: 'mysql',
-    host: process.env.DB_HOST ?? 'localhost',
-    port: Number(process.env.DB_PORT ?? 3306),
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    timezone: process.env.APP_TIMEZONE ?? '+07:00',
-    entities: [Department, Employee, User, Attendance],
-    // Creates the tables even if no service has run yet.
-    synchronize: true,
-  });
   await dataSource.initialize();
-  console.log('Terhubung ke database, mulai seeding...');
+  if (await dataSource.showMigrations()) {
+    throw new Error('Pending migrations. Run `npm run db:migrate` first.');
+  }
+  console.log('Connected, seeding...');
 
   const departmentRepo = dataSource.getRepository(Department);
   const employeeRepo = dataSource.getRepository(Employee);
@@ -98,7 +86,7 @@ async function seed() {
       (await departmentRepo.save(departmentRepo.create({ name })));
     departmentIdByName.set(name, department.id);
   }
-  console.log(`  ✓ ${departmentIdByName.size} departemen`);
+  console.log(`  ✓ ${departmentIdByName.size} departments`);
 
   const passwordHash = await hash(SEED_PASSWORD, 10);
   for (const item of EMPLOYEES) {
@@ -120,20 +108,26 @@ async function seed() {
     await userRepo.save(
       userRepo.merge(existingUser ?? userRepo.create(), {
         employeeId: employee.id,
+        employeeCode: item.employeeCode,
         email: item.email,
         passwordHash,
         role: item.role,
         isActive: true,
+        // Sample accounts are ready to use; real new hires get a temporary password instead.
+        mustChangePassword: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       }),
     );
-    console.log(`  ✓ ${item.employeeCode} ${item.fullName} (${item.role}) - login: ${item.email}`);
+    console.log(`  ✓ ${item.employeeCode} ${item.fullName} (${item.role}), login: ${item.email}`);
   }
 
   await dataSource.destroy();
-  console.log('Seeding selesai.');
+  console.log('Seeding done.');
 }
 
-seed().catch((error) => {
-  console.error('Seeding gagal:', error);
+seed().catch(async (error) => {
+  console.error('Seeding failed:', error instanceof Error ? error.message : error);
+  if (dataSource.isInitialized) await dataSource.destroy();
   process.exit(1);
 });

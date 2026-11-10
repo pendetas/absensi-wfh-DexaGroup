@@ -15,6 +15,6 @@ async function bootstrap() {
   });
 
   await app.listen();
-  new Logger('AuthService').log(`auth-service mendengarkan di TCP port ${port}`);
+  new Logger('AuthService').log(`auth-service listening on TCP port ${port}`);
 }
 void bootstrap();

@@ -5,4 +5,7 @@ export * from './constants/services';
 export * from './constants/message-patterns';
 export * from './enums/role.enum';
 export * from './contracts/auth.contracts';
+export * from './contracts/employee.contracts';
 export * from './rpc/rpc-error';
+export * from './security/password';
+export * from './utils/phone';

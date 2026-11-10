@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, ClientsProviderAsyncOptions, Transport } from '@nestjs/microservices';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppConfigModule, ATTENDANCE_SERVICE, AUTH_SERVICE, EMPLOYEE_SERVICE } from '@app/common';
 import { AuthController } from './auth/auth.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { DepartmentsController } from './employees/departments.controller';
 import { EmployeesController } from './employees/employees.controller';
+import { EmployeesService } from './employees/employees.service';
 import { HealthController } from './health/health.controller';
 
 /** Host and port come from env: localhost in dev, the compose service name in Docker. */
@@ -42,10 +45,17 @@ function tcpClient(
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({ secret: config.getOrThrow<string>('JWT_SECRET') }),
     }),
+    // Per-IP default; login and refresh set stricter limits with @Throttle.
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 120 }],
+      errorMessage: 'Terlalu banyak percobaan. Silakan tunggu sebentar lalu coba lagi.',
+    }),
   ],
-  controllers: [HealthController, AuthController, EmployeesController],
+  controllers: [HealthController, AuthController, EmployeesController, DepartmentsController],
   providers: [
-    // Global guards run in this order: RolesGuard needs request.user from JwtAuthGuard.
+    EmployeesService,
+    // Global guards run in this order: throttling first, and RolesGuard needs request.user.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

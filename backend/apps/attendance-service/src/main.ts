@@ -14,6 +14,6 @@ async function bootstrap() {
   });
 
   await app.listen();
-  new Logger('AttendanceService').log(`attendance-service mendengarkan di TCP port ${port}`);
+  new Logger('AttendanceService').log(`attendance-service listening on TCP port ${port}`);
 }
 void bootstrap();
