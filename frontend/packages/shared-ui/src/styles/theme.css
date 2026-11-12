@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+
+/* Tailwind does not scan node_modules, where the apps see this package. */
+@source '../';
+
+@theme {
+  /* Open Sans is the typeface on dexagroup.com; its tabular figures keep time columns aligned. */
+  --font-sans: 'Open Sans Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Only these colours exist, so a stray Tailwind default can't creep in. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-ink: #1c1c1e;
+  --color-ink-soft: #55555a;
+  --color-paper: #ffffff;
+  --color-surface: #f4f4f2;
+  --color-line: #dcdcd8;
+  /* Field and button outlines: at least 3:1 on white and on surface, as WCAG 1.4.11 asks. */
+  --color-line-strong: #878781;
+
+  /* Dexa red (rgb 165 40 35 on dexagroup.com): the employee home band, actions, current page. */
+  --color-brand: #a52823;
+  --color-brand-strong: #7d1d19;
+  --color-brand-tint: #fbeeed;
+  /* Row hover: warm enough to read as Dexa, light enough to keep text contrast. */
+  --color-brand-wash: #fdf6f5;
+
+  /* Attendance status. Each pairs with a text label; colour is never the only signal. */
+  --color-ok: #1d6b3c;
+  --color-ok-tint: #e7f3ea;
+  --color-warn: #8a5300;
+  --color-warn-tint: #fdf1d7;
+  /* Brighter versions for thin bars and dots, where there is no text to read. */
+  --color-ok-mark: #2e8b57;
+  --color-warn-mark: #c98a12;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tailwind resets buttons to the default cursor. */
+  a[href],
+  button,
+  select,
+  summary,
+  label[for],
+  input[type='checkbox'],
+  input[type='date'],
+  input[type='time'] {
+    cursor: pointer;
+  }
+
+  :disabled {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  dialog::backdrop {
+    background: rgb(28 28 30 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

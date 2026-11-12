@@ -1,0 +1,4 @@
+@import '@dexa/shared-ui/theme.css';
+
+/* App files are outside the shared package, so Tailwind is pointed at them too. */
+@source './';
