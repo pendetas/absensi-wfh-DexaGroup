@@ -5,7 +5,8 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+    "tsConfigPath": "apps/api-gateway/tsconfig.app.json",
+    "webpackConfigPath": "webpack.config.js"
   },
   "monorepo": true,
   "root": "apps/api-gateway",
@@ -16,7 +17,9 @@
       "entryFile": "main",
       "sourceRoot": "apps/api-gateway/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json",
+        "webpack": true,
+        "webpackConfigPath": "webpack.config.js"
       }
     },
     "attendance-service": {
@@ -25,7 +28,9 @@
       "entryFile": "main",
       "sourceRoot": "apps/attendance-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/attendance-service/tsconfig.app.json"
+        "tsConfigPath": "apps/attendance-service/tsconfig.app.json",
+        "webpack": true,
+        "webpackConfigPath": "webpack.config.js"
       }
     },
     "auth-service": {
@@ -34,7 +39,9 @@
       "entryFile": "main",
       "sourceRoot": "apps/auth-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/auth-service/tsconfig.app.json"
+        "tsConfigPath": "apps/auth-service/tsconfig.app.json",
+        "webpack": true,
+        "webpackConfigPath": "webpack.config.js"
       }
     },
     "common": {
@@ -52,7 +59,9 @@
       "entryFile": "main",
       "sourceRoot": "apps/employee-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/employee-service/tsconfig.app.json"
+        "tsConfigPath": "apps/employee-service/tsconfig.app.json",
+        "webpack": true,
+        "webpackConfigPath": "webpack.config.js"
       }
     }
   }
