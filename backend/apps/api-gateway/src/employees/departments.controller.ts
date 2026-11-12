@@ -13,7 +13,7 @@ export class DepartmentsController {
   constructor(@Inject(EMPLOYEE_SERVICE) private readonly employeeClient: ClientProxy) {}
 
   @Get()
-  @ApiOperation({ summary: 'Daftar departemen (untuk dropdown)' })
+  @ApiOperation({ summary: 'Departments, for the employee form' })
   findAll() {
     return callService<DepartmentDto[]>(this.employeeClient, EMPLOYEE_PATTERNS.FIND_DEPARTMENTS);
   }

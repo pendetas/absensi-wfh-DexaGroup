@@ -54,7 +54,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK) // Nest defaults POST to 201; login creates nothing.
-  @ApiOperation({ summary: 'Login dengan email atau NIK' })
+  @ApiOperation({ summary: 'Log in with email or NIK' })
   async login(
     @Body() dto: LoginDto,
     @Req() request: Request,
@@ -75,7 +75,7 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Perbarui access token dari cookie sesi' })
+  @ApiOperation({ summary: 'Get a new access token from the session cookie' })
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const refreshToken = readSessionCookie(request);
     if (!refreshToken) throw new UnauthorizedException('Sesi tidak ditemukan, silakan login');
@@ -96,7 +96,7 @@ export class AuthController {
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Akhiri sesi di perangkat ini' })
+  @ApiOperation({ summary: 'End the session on this device' })
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const refreshToken = readSessionCookie(request);
     if (refreshToken) {
@@ -109,7 +109,7 @@ export class AuthController {
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Ganti password; sesi di perangkat lain diakhiri' })
+  @ApiOperation({ summary: 'Change password; sessions on other devices end' })
   changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto) {
     return callService<AccessTokenResult>(this.authClient, AUTH_PATTERNS.CHANGE_PASSWORD, {
       userId: user.sub,
@@ -123,7 +123,7 @@ export class AuthController {
   @AllowPendingPasswordChange()
   @Get('me')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Profil user yang sedang login' })
+  @ApiOperation({ summary: 'Profile of the logged-in user' })
   async me(@CurrentUser() user: JwtPayload) {
     const employee = await callService(this.employeeClient, EMPLOYEE_PATTERNS.FIND_BY_ID, {
       id: user.employeeId,

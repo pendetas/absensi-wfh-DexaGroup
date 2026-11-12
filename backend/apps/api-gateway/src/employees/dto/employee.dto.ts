@@ -9,7 +9,6 @@ import {
   IsOptional,
   IsString,
   Matches,
-  Max,
   MaxLength,
   Min,
   MinLength,
@@ -20,8 +19,7 @@ import {
   normalizeIndonesianPhone,
   Role,
 } from '@app/common';
-
-const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+import { PageQueryDto, trim } from '../../common/dto/page-query.dto';
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'Agus Saputra' })
@@ -37,7 +35,7 @@ export class CreateEmployeeDto {
   @MaxLength(100, { message: 'Email maksimal 100 karakter' })
   email: string;
 
-  @ApiProperty({ example: '0812-3456-7890', description: 'Disimpan sebagai +62' })
+  @ApiProperty({ example: '0812-3456-7890', description: 'Stored as +62…' })
   @Transform(({ value }) => normalizeIndonesianPhone(value))
   @IsString({ message: 'Nomor HP wajib diisi' })
   @Matches(INDONESIAN_MOBILE_PATTERN, {
@@ -58,7 +56,7 @@ export class CreateEmployeeDto {
   @MaxLength(100, { message: 'Jabatan maksimal 100 karakter' })
   position: string;
 
-  @ApiProperty({ example: '2026-12-01', description: 'Boleh di masa depan' })
+  @ApiProperty({ example: '2026-12-01', description: 'May be in the future' })
   @IsDateString({ strict: true }, { message: 'Tanggal bergabung harus berformat YYYY-MM-DD' })
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Tanggal bergabung harus berformat YYYY-MM-DD' })
   joinDate: string;
@@ -80,8 +78,8 @@ export class UpdateRoleDto {
   role: Role;
 }
 
-export class ListEmployeesQueryDto {
-  @ApiPropertyOptional({ description: 'Cari nama, NIK, atau email' })
+export class ListEmployeesQueryDto extends PageQueryDto {
+  @ApiPropertyOptional({ description: 'Name, NIK or email' })
   @IsOptional()
   @Transform(trim)
   @IsString()
@@ -99,19 +97,4 @@ export class ListEmployeesQueryDto {
   @IsOptional()
   @IsEnum(EmployeeStatusFilter, { message: 'Status harus active, inactive, atau all' })
   status: EmployeeStatusFilter = EmployeeStatusFilter.ACTIVE;
-
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
-
-  @ApiPropertyOptional({ default: 10, maximum: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 10;
 }

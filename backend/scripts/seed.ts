@@ -3,13 +3,14 @@
  * Idempotent: rows are matched on unique columns. Every sample account uses SEED_PASSWORD.
  */
 import { hash } from 'bcryptjs';
+import { DataSource } from 'typeorm';
 import { Role } from '@app/common';
-import dataSource from '../database/data-source';
+import defaultDataSource from '../database/data-source';
 import { Department } from '../apps/employee-service/src/entities/department.entity';
 import { Employee } from '../apps/employee-service/src/entities/employee.entity';
 import { User } from '../apps/auth-service/src/entities/user.entity';
 
-const SEED_PASSWORD = 'Password123!';
+export const SEED_PASSWORD = 'Password123!';
 
 const DEPARTMENTS = ['Human Resources', 'Engineering', 'Finance', 'Marketing', 'Operations'];
 
@@ -66,13 +67,11 @@ const EMPLOYEES = [
   },
 ];
 
-async function seed() {
-  await dataSource.initialize();
-  if (await dataSource.showMigrations()) {
-    throw new Error('Pending migrations. Run `npm run db:migrate` first.');
-  }
-  console.log('Connected, seeding...');
-
+/** Also used by the e2e tests to fill their own database. */
+export async function seedSampleData(
+  dataSource: DataSource,
+  log: (line: string) => void = console.log,
+): Promise<void> {
   const departmentRepo = dataSource.getRepository(Department);
   const employeeRepo = dataSource.getRepository(Employee);
   const userRepo = dataSource.getRepository(User);
@@ -86,7 +85,7 @@ async function seed() {
       (await departmentRepo.save(departmentRepo.create({ name })));
     departmentIdByName.set(name, department.id);
   }
-  console.log(`  ✓ ${departmentIdByName.size} departments`);
+  log(`  ✓ ${departmentIdByName.size} departments`);
 
   const passwordHash = await hash(SEED_PASSWORD, 10);
   for (const item of EMPLOYEES) {
@@ -119,15 +118,26 @@ async function seed() {
         lockedUntil: null,
       }),
     );
-    console.log(`  ✓ ${item.employeeCode} ${item.fullName} (${item.role}), login: ${item.email}`);
+    log(`  ✓ ${item.employeeCode} ${item.fullName} (${item.role}), login: ${item.email}`);
   }
+}
 
-  await dataSource.destroy();
+async function main() {
+  await defaultDataSource.initialize();
+  if (await defaultDataSource.showMigrations()) {
+    throw new Error('Pending migrations. Run `npm run db:migrate` first.');
+  }
+  console.log('Connected, seeding...');
+  await seedSampleData(defaultDataSource);
+  await defaultDataSource.destroy();
   console.log('Seeding done.');
 }
 
-seed().catch(async (error) => {
-  console.error('Seeding failed:', error instanceof Error ? error.message : error);
-  if (dataSource.isInitialized) await dataSource.destroy();
-  process.exit(1);
-});
+// Only when run as a script (`npm run db:seed`), not when imported by a test.
+if (require.main === module) {
+  main().catch(async (error) => {
+    console.error('Seeding failed:', error instanceof Error ? error.message : error);
+    if (defaultDataSource.isInitialized) await defaultDataSource.destroy();
+    process.exit(1);
+  });
+}

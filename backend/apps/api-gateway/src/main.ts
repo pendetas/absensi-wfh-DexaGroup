@@ -1,27 +1,15 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
 import { loadEnv } from '@app/common';
 import { GatewayModule } from './gateway.module';
+import { configureGateway } from './gateway.setup';
 
 async function bootstrap() {
   loadEnv();
 
   const app = await NestFactory.create(GatewayModule);
-
-  app.setGlobalPrefix('api');
-  app.use(helmet());
-  app.use(cookieParser());
-  // Credentials are allowed so the session cookie works, which requires an explicit origin list.
-  app.enableCors({
-    origin: (process.env.CORS_ORIGINS ?? '').split(',').map((origin) => origin.trim()),
-    credentials: true,
-  });
-
-  // whitelist drops body fields the DTO doesn't declare, e.g. a smuggled "role".
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  configureGateway(app);
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Dexa WFH Attendance API')

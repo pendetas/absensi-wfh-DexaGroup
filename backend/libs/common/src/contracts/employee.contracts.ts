@@ -8,6 +8,13 @@ export interface FindEmployeesPayload {
   search?: string;
   departmentId?: number;
   status: EmployeeStatusFilter;
+  /** Only employees whose join date is on or before this date (YYYY-MM-DD). */
+  joinedOnOrBefore?: string;
+  /** Included even when the status or join-date filter would drop them. */
+  alwaysIncludeIds?: number[];
+  /** When set, only these ids can match; an empty list matches nobody. */
+  ids?: number[];
+  excludeIds?: number[];
   page: number;
   limit: number;
 }

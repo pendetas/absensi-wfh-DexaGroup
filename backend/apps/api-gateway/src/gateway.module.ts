@@ -5,6 +5,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ClientsModule, ClientsProviderAsyncOptions, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppConfigModule, ATTENDANCE_SERVICE, AUTH_SERVICE, EMPLOYEE_SERVICE } from '@app/common';
+import { AttendanceMonitoringController } from './attendance/attendance-monitoring.controller';
+import { AttendanceController } from './attendance/attendance.controller';
+import { AttendanceService } from './attendance/attendance.service';
 import { AuthController } from './auth/auth.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -51,9 +54,17 @@ function tcpClient(
       errorMessage: 'Terlalu banyak percobaan. Silakan tunggu sebentar lalu coba lagi.',
     }),
   ],
-  controllers: [HealthController, AuthController, EmployeesController, DepartmentsController],
+  controllers: [
+    HealthController,
+    AuthController,
+    EmployeesController,
+    DepartmentsController,
+    AttendanceController,
+    AttendanceMonitoringController,
+  ],
   providers: [
     EmployeesService,
+    AttendanceService,
     // Global guards run in this order: throttling first, and RolesGuard needs request.user.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },

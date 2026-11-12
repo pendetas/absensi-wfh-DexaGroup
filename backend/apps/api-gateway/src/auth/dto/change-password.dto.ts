@@ -14,7 +14,10 @@ export class ChangePasswordDto {
   @MaxLength(100)
   currentPassword: string;
 
-  @ApiProperty({ example: 'PasswordBaru1', description: PASSWORD_POLICY_MESSAGE })
+  @ApiProperty({
+    example: 'PasswordBaru1',
+    description: '8 to 72 characters with a letter and a digit',
+  })
   @IsString({ message: PASSWORD_POLICY_MESSAGE })
   @MinLength(PASSWORD_MIN_LENGTH, { message: PASSWORD_POLICY_MESSAGE })
   @MaxLength(PASSWORD_MAX_LENGTH, { message: `Password maksimal ${PASSWORD_MAX_LENGTH} karakter` })

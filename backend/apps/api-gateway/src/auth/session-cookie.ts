@@ -11,16 +11,24 @@ const baseOptions = (): CookieOptions => ({
   path: '/api/auth',
 });
 
+/**
+ * A readable marker beside the httpOnly cookie. It holds no secret: the frontend only checks
+ * that it exists, so a first-time visitor isn't sent to /auth/refresh just to get a 401.
+ */
+export const SIGNED_IN_COOKIE = 'dexa_signed_in';
+
+const markerOptions = (): CookieOptions => ({ ...baseOptions(), httpOnly: false, path: '/' });
+
 /** Trusted devices get a dated cookie; otherwise it's a browser-session cookie. */
 export function setSessionCookie(response: Response, session: SessionResult): void {
-  response.cookie(SESSION_COOKIE, session.refreshToken, {
-    ...baseOptions(),
-    ...(session.persistent ? { expires: new Date(session.refreshExpiresAt) } : {}),
-  });
+  const lifetime = session.persistent ? { expires: new Date(session.refreshExpiresAt) } : {};
+  response.cookie(SESSION_COOKIE, session.refreshToken, { ...baseOptions(), ...lifetime });
+  response.cookie(SIGNED_IN_COOKIE, '1', { ...markerOptions(), ...lifetime });
 }
 
 export function clearSessionCookie(response: Response): void {
   response.clearCookie(SESSION_COOKIE, baseOptions());
+  response.clearCookie(SIGNED_IN_COOKIE, markerOptions());
 }
 
 export function readSessionCookie(request: Request): string | undefined {

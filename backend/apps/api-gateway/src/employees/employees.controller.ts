@@ -31,31 +31,31 @@ export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Daftar karyawan (cari, filter, paginasi)' })
+  @ApiOperation({ summary: 'List employees with search, filters and pagination' })
   list(@Query() query: ListEmployeesQueryDto) {
     return this.employeesService.list(query);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Detail karyawan beserta status akun' })
+  @ApiOperation({ summary: 'One employee with their account status' })
   get(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.get(id);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Tambah karyawan; password sementara hanya ditampilkan sekali' })
+  @ApiOperation({ summary: 'Add an employee; the temporary password is returned once' })
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeesService.create(dto);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Ubah data karyawan' })
+  @ApiOperation({ summary: 'Update employee data' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEmployeeDto) {
     return this.employeesService.update(id, dto);
   }
 
   @Patch(':id/role')
-  @ApiOperation({ summary: 'Ubah role (tidak bisa untuk akun sendiri)' })
+  @ApiOperation({ summary: 'Change role (not for your own account)' })
   updateRole(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoleDto,
@@ -66,21 +66,21 @@ export class EmployeesController {
 
   @Post(':id/deactivate')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Nonaktifkan karyawan; semua sesinya berakhir' })
+  @ApiOperation({ summary: 'Deactivate an employee; all their sessions end' })
   deactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: JwtPayload) {
     return this.employeesService.deactivate(id, actor);
   }
 
   @Post(':id/reactivate')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Aktifkan kembali; menerbitkan password sementara baru' })
+  @ApiOperation({ summary: 'Reactivate; issues a new temporary password' })
   reactivate(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.reactivate(id);
   }
 
   @Post(':id/reset-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reset password; menerbitkan password sementara baru' })
+  @ApiOperation({ summary: 'Reset password; issues a new temporary password' })
   resetPassword(@Param('id', ParseIntPipe) id: number, @CurrentUser() actor: JwtPayload) {
     return this.employeesService.resetPassword(id, actor);
   }

@@ -9,11 +9,9 @@ import {
   rpcError,
   UpdateEmployeePayload,
 } from '@app/common';
+import { nextEmployeeCode } from './employee-code';
 import { Department } from './entities/department.entity';
 import { Employee } from './entities/employee.entity';
-
-const EMPLOYEE_CODE_PREFIX = 'EMP';
-const EMPLOYEE_CODE_DIGITS = 3;
 
 @Injectable()
 export class EmployeeService {
@@ -27,6 +25,10 @@ export class EmployeeService {
     search,
     departmentId,
     status,
+    joinedOnOrBefore,
+    alwaysIncludeIds,
+    ids,
+    excludeIds,
     page,
     limit,
   }: FindEmployeesPayload): Promise<Paginated<Employee>> {
@@ -37,10 +39,25 @@ export class EmployeeService {
       .skip((page - 1) * limit)
       .take(limit);
 
-    if (status !== EmployeeStatusFilter.ALL) {
-      query.andWhere('employee.isActive = :isActive', {
-        isActive: status === EmployeeStatusFilter.ACTIVE,
-      });
+    const eligibility = [
+      status !== EmployeeStatusFilter.ALL && 'employee.isActive = :isActive',
+      joinedOnOrBefore && 'employee.joinDate <= :joinedOnOrBefore',
+    ].filter(Boolean);
+    if (eligibility.length > 0) {
+      const eligible = `(${eligibility.join(' AND ')})`;
+      // e.g. a since-deactivated employee who has a record on the date HR is viewing.
+      query.andWhere(
+        alwaysIncludeIds?.length
+          ? `(${eligible} OR employee.id IN (:...alwaysIncludeIds))`
+          : eligible,
+        { isActive: status === EmployeeStatusFilter.ACTIVE, joinedOnOrBefore, alwaysIncludeIds },
+      );
+    }
+    if (ids) {
+      query.andWhere(ids.length > 0 ? 'employee.id IN (:...ids)' : '1 = 0', { ids });
+    }
+    if (excludeIds?.length) {
+      query.andWhere('employee.id NOT IN (:...excludeIds)', { excludeIds });
     }
     if (departmentId) {
       query.andWhere('employee.departmentId = :departmentId', { departmentId });
@@ -76,23 +93,23 @@ export class EmployeeService {
     await this.assertDepartmentExists(payload.departmentId);
     await this.assertEmailAvailable(payload.email);
 
-    // The next code is read and inserted in one transaction; the row lock on the current
-    // highest code makes concurrent creates wait instead of picking the same number.
+    // The next code is read and inserted in one transaction; the row lock on the newest
+    // employee makes concurrent creates wait instead of picking the same number.
     const id = await this.dataSource.transaction(async (manager) => {
-      const last = await manager
+      // Newest row, not highest code: as strings, EMP999 sorts after EMP1000.
+      const newest = await manager
         .getRepository(Employee)
         .createQueryBuilder('employee')
         .setLock('pessimistic_write')
-        .orderBy('employee.employeeCode', 'DESC')
+        .orderBy('employee.id', 'DESC')
         .limit(1)
         .getOne();
-      const next = last ? Number(last.employeeCode.slice(EMPLOYEE_CODE_PREFIX.length)) + 1 : 1;
 
       const saved = await manager.getRepository(Employee).save(
         manager.getRepository(Employee).create({
           ...payload,
           email: payload.email.toLowerCase(),
-          employeeCode: `${EMPLOYEE_CODE_PREFIX}${String(next).padStart(EMPLOYEE_CODE_DIGITS, '0')}`,
+          employeeCode: nextEmployeeCode(newest?.employeeCode ?? null),
           isActive: true,
         }),
       );

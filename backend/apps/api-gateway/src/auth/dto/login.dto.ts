@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class LoginDto {
-  @ApiProperty({ example: 'hr@dexa.test', description: 'Email atau NIK (mis. EMP001)' })
+  @ApiProperty({ example: 'hr@dexa.test', description: 'Email or NIK (e.g. EMP001)' })
   @IsString({ message: 'Email atau NIK wajib diisi' })
   @IsNotEmpty({ message: 'Email atau NIK wajib diisi' })
   @MaxLength(100, { message: 'Email atau NIK maksimal 100 karakter' })
@@ -14,7 +14,7 @@ export class LoginDto {
   @MaxLength(100, { message: 'Password maksimal 100 karakter' })
   password: string;
 
-  @ApiPropertyOptional({ default: false, description: 'Percayai perangkat ini selama 7 hari' })
+  @ApiPropertyOptional({ default: false, description: 'Trust this device for 7 days' })
   @IsOptional()
   @IsBoolean({ message: 'rememberDevice harus bernilai true atau false' })
   rememberDevice?: boolean;

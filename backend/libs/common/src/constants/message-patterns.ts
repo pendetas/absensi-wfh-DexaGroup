@@ -27,4 +27,12 @@ export const EMPLOYEE_PATTERNS = {
 
 export const ATTENDANCE_PATTERNS = {
   HEALTH: 'attendance.health',
+  TODAY: 'attendance.today',
+  CHECK_IN: 'attendance.checkIn',
+  CHECK_OUT: 'attendance.checkOut',
+  FIND_HISTORY: 'attendance.findHistory',
+  FIND_BY_DATE: 'attendance.findByDate',
+  FIND_PHOTO: 'attendance.photo.find',
+  GET_SETTINGS: 'attendance.settings.get',
+  UPDATE_SETTINGS: 'attendance.settings.update',
 } as const;

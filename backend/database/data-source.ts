@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { loadEnv } from '@app/common';
+import { AttendanceSettings } from '../apps/attendance-service/src/entities/attendance-settings.entity';
 import { Attendance } from '../apps/attendance-service/src/entities/attendance.entity';
 import { Session } from '../apps/auth-service/src/entities/session.entity';
 import { User } from '../apps/auth-service/src/entities/user.entity';
@@ -17,7 +18,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   timezone: process.env.APP_TIMEZONE ?? '+07:00',
-  entities: [Department, Employee, User, Session, Attendance],
+  entities: [Department, Employee, User, Session, Attendance, AttendanceSettings],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
   migrationsTableName: 'migrations',
 });
