@@ -14,7 +14,7 @@ const BASE =
   'disabled:active:translate-y-0 disabled:active:scale-100';
 
 const VARIANTS: Record<Variant, string> = {
-  // Lifts and darkens: the one button on a screen that invites a press.
+  // Only the primary lifts on hover: it's the one button per screen that invites a press.
   primary:
     'bg-brand text-white hover:-translate-y-px hover:bg-brand-strong ' +
     'hover:shadow-[0_8px_18px_rgb(125_29_25/0.28)] disabled:hover:translate-y-0 disabled:hover:shadow-none',

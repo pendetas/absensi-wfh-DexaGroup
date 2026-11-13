@@ -4,12 +4,10 @@ const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 
 const SIGNED_IN_MARKER = 'dexa_signed_in=1';
 
-
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly messages: string[],
-    readonly code?: string,
   ) {
     super(messages[0]);
   }
@@ -31,7 +29,7 @@ function fallbackMessage(status: number): string {
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
-  let body: { message?: string | string[]; code?: string } = {};
+  let body: { message?: string | string[] } = {};
   try {
     body = (await response.json()) as typeof body;
   } catch {
@@ -41,7 +39,6 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(
     response.status,
     messages.length > 0 ? messages : [fallbackMessage(response.status)],
-    body.code,
   );
 }
 
@@ -135,9 +132,8 @@ export const api = {
   },
 
   /**
-   * On page load: resolves to null when there is no valid session. The session cookie itself
-   * is httpOnly, so the gateway sets a readable marker next to it; without the marker there
-   * is nothing to restore and no request is made.
+   * Resolves to null when there is no valid session.
+   * The cookie is httpOnly, so the gateway's readable marker decides whether to request at all.
    */
   restoreSession: (): Promise<ClientSession | null> =>
     document.cookie.split('; ').includes(SIGNED_IN_MARKER)

@@ -5,10 +5,7 @@ import { cn } from '../lib/cn';
 import type { PhotoKind } from '../lib/types';
 import { Skeleton } from './Feedback';
 
-/**
- * An attendance photo. The endpoint needs the access token, which a plain <img src> can't
- * send, so the image is fetched as a blob and shown through an object URL.
- */
+/** The endpoint needs the access token, which <img src> can't send, so it's fetched as a blob. */
 export function AuthPhoto({
   attendanceId,
   kind,

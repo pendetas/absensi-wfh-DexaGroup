@@ -1,5 +1,35 @@
-# Development: `docker compose up -d mysql` runs only the database; services run with npm.
-# ${...} values come from .env in this folder.
+# Whole system: `docker compose up --build`. Database only, for npm development: `docker compose up -d mysql`.
+# ${...} values come from .env when it exists; the defaults suit a local demo.
+
+x-backend-env: &backend-env
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_USERNAME: ${DB_USERNAME:-dexa}
+  DB_PASSWORD: ${DB_PASSWORD:-dexa_secret}
+  DB_DATABASE: ${DB_DATABASE:-dexa_absensi}
+  JWT_SECRET: ${JWT_SECRET:-local-docker-demo-secret-change-me}
+  JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-900}
+  SESSION_TRUSTED_DAYS: ${SESSION_TRUSTED_DAYS:-7}
+  SESSION_DEFAULT_HOURS: ${SESSION_DEFAULT_HOURS:-12}
+  # Plain http on localhost; set true behind HTTPS.
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  AUTH_SERVICE_HOST: auth-service
+  AUTH_SERVICE_PORT: 4001
+  EMPLOYEE_SERVICE_HOST: employee-service
+  EMPLOYEE_SERVICE_PORT: 4002
+  ATTENDANCE_SERVICE_HOST: attendance-service
+  ATTENDANCE_SERVICE_PORT: 4003
+  UPLOAD_DIR: /app/uploads
+  GEOCODER_ENABLED: ${GEOCODER_ENABLED:-true}
+  GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org}
+  APP_TIMEZONE: ${APP_TIMEZONE:-+07:00}
+
+x-backend-image: &backend-image
+  build:
+    context: ./backend
+    target: runtime
+  image: dexa-absensi-backend
+  restart: unless-stopped
 
 services:
   mysql:
@@ -7,10 +37,10 @@ services:
     container_name: dexa-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-dexa_absensi}
+      MYSQL_USER: ${DB_USERNAME:-dexa}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-dexa_secret}
       TZ: Asia/Jakarta
     command: ["--default-time-zone=+07:00"]
     ports:
@@ -19,10 +49,81 @@ services:
       - mysql_data:/var/lib/mysql
     healthcheck:
       # Ping over TCP, not the socket: the temporary first-boot server has networking off.
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_secret}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
+  # Creates the tables and the test accounts, then exits. Safe to run on every start.
+  migrate:
+    build:
+      context: ./backend
+      target: build
+    image: dexa-absensi-backend-tools
+    environment: *backend-env
+    command: ["npm", "run", "db:setup"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  auth-service:
+    <<: *backend-image
+    environment: *backend-env
+    command: ["node", "dist/apps/auth-service/main"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  employee-service:
+    <<: *backend-image
+    environment: *backend-env
+    command: ["node", "dist/apps/employee-service/main"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  attendance-service:
+    <<: *backend-image
+    environment: *backend-env
+    command: ["node", "dist/apps/attendance-service/main"]
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api-gateway:
+    <<: *backend-image
+    environment:
+      <<: *backend-env
+      # One proxy hop (nginx), so rate limits apply per visitor, not to nginx.
+      TRUST_PROXY: 1
+      CORS_ORIGINS: http://karyawan.localhost:8080,http://hr.localhost:8080
+    command: ["node", "dist/apps/api-gateway/main"]
+    ports:
+      - "${GATEWAY_PUBLIC_PORT:-3000}:3000"
+    depends_on:
+      - auth-service
+      - employee-service
+      - attendance-service
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: ./frontend
+    image: dexa-absensi-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+      - "8081:8081"
+      - "8082:8082"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
 volumes:
   mysql_data:
+  uploads:

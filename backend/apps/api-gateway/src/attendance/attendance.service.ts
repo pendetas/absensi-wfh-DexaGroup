@@ -16,16 +16,23 @@ import {
   type EmployeeDto,
   EmployeeStatusFilter,
   type FindEmployeesPayload,
+  type GeoLocation,
   type JwtPayload,
   NOT_CHECKED_IN,
   type Paginated,
   type PhotoKind,
   type PhotoResult,
+  type PlaceResult,
   Role,
   type TodayAttendance,
 } from '@app/common';
 import { callService } from '../common/service-client';
-import { AttendanceProofDto, HistoryQueryDto, MonitoringQueryDto } from './dto/attendance.dto';
+import {
+  AttendanceProofDto,
+  HistoryQueryDto,
+  MonitoringQueryDto,
+  UpdateAttendanceSettingsDto,
+} from './dto/attendance.dto';
 
 type RosterEmployee = Pick<
   EmployeeDto,
@@ -59,6 +66,8 @@ export interface Arrival {
   fullName: string;
   checkInAt: string;
   status: AttendanceStatus;
+  location: GeoLocation | null;
+  place: string | null;
 }
 
 type RosterFilter = Pick<
@@ -66,11 +75,7 @@ type RosterFilter = Pick<
   'status' | 'joinedOnOrBefore' | 'alwaysIncludeIds' | 'ids' | 'excludeIds'
 >;
 
-/**
- * Attendance rows live in attendance-service and names in employee-service, so the gateway
- * joins them: one call for the day's records, then calls for the matching page of employees,
- * the missing count, and the names of everyone who checked in.
- */
+/** Attendance lives in attendance-service and names in employee-service; the gateway joins them. */
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -145,13 +150,21 @@ export class AttendanceService {
     });
   }
 
+  describePlace(location: GeoLocation): Promise<PlaceResult> {
+    return callService(this.attendanceClient, ATTENDANCE_PATTERNS.DESCRIBE_PLACE, location);
+  }
+
   settings(): Promise<AttendanceSettingsDto> {
     return callService(this.attendanceClient, ATTENDANCE_PATTERNS.GET_SETTINGS);
   }
 
-  updateSettings(workStartTime: string, actor: JwtPayload): Promise<AttendanceSettingsDto> {
+  updateSettings(
+    { workStartTime, dailyWorkMinutes }: UpdateAttendanceSettingsDto,
+    actor: JwtPayload,
+  ): Promise<AttendanceSettingsDto> {
     return callService(this.attendanceClient, ATTENDANCE_PATTERNS.UPDATE_SETTINGS, {
       workStartTime,
+      dailyWorkMinutes,
       updatedByEmployeeId: actor.employeeId,
     });
   }
@@ -212,6 +225,8 @@ export class AttendanceService {
                 fullName: employee.fullName,
                 checkInAt: record.checkInAt,
                 status: record.status,
+                location: record.checkInLocation,
+                place: record.checkInPlace,
               },
             ]
           : [];

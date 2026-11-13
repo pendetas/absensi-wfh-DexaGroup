@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint, build, unit and e2e tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root_secret
+          MYSQL_DATABASE: dexa_absensi
+          MYSQL_USER: dexa
+          MYSQL_PASSWORD: dexa_secret
+          TZ: Asia/Jakarta
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot_secret"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: dexa
+      DB_PASSWORD: dexa_secret
+      DB_DATABASE: dexa_absensi
+      MYSQL_ROOT_PASSWORD: root_secret
+      JWT_SECRET: ci-only-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint:check
+      - run: npm run build
+      # The runner's clock is UTC, so passing here shows the WIB rules don't depend on the host.
+      - run: npm test
+      - name: Migrations and seed
+        run: npm run db:setup
+      - run: npm run test:e2e
+
+  frontend:
+    name: Frontend (lint, typecheck, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  docker:
+    name: Docker (whole system starts and answers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start
+        run: docker compose up -d --build
+      - name: Every service reaches MySQL
+        run: |
+          health=$(curl -sf http://localhost:3000/api/health)
+          echo "$health"
+          if echo "$health" | grep -q '"down"'; then exit 1; fi
+      - name: Both apps are served, and nginx forwards the API
+        run: |
+          curl -sf -H 'Host: karyawan.localhost' http://localhost:8080/ | grep -q '<title>Absensi WFH, Dexa Group</title>'
+          curl -sf -H 'Host: hr.localhost' http://localhost:8080/ | grep -q '<title>Absensi WFH HR, Dexa Group</title>'
+          curl -sf -H 'Host: hr.localhost' -H 'Content-Type: application/json' \
+            -d '{"identifier":"hr@dexa.test","password":"Password123!"}' \
+            http://localhost:8080/api/auth/login | grep -q '"role":"HR_ADMIN"'
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop
+        if: always()
+        run: docker compose down -v

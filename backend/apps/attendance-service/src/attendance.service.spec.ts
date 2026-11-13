@@ -6,6 +6,7 @@ import { AttendanceStatus, CheckInPayload, PhotoKind, RpcErrorPayload } from '@a
 import { AttendanceService } from './attendance.service';
 import { Attendance } from './entities/attendance.entity';
 import { PhotoStorageService } from './photo-storage.service';
+import { PlaceService } from './place.service';
 import { SettingsService } from './settings.service';
 
 const PHOTO = 'base64-photo';
@@ -53,6 +54,8 @@ describe('AttendanceService', () => {
       checkOutLatitude: null,
       checkOutLongitude: null,
       checkOutAccuracyM: null,
+      checkInPlace: null,
+      checkOutPlace: null,
       ...overrides,
     }) as Attendance;
 
@@ -84,6 +87,9 @@ describe('AttendanceService', () => {
       photoStorage as unknown as PhotoStorageService,
       { now: () => now },
       { get: (_key: string, fallback: string) => fallback } as unknown as ConfigService,
+      {
+        describe: () => Promise.resolve({ place: 'Coblong, Bandung', precision: 'precise' }),
+      } as unknown as PlaceService,
     );
   });
 
@@ -111,8 +117,13 @@ describe('AttendanceService', () => {
     it('keeps the location when the employee shared it, and null when not', async () => {
       const location = { latitude: -6.2088, longitude: 106.8456, accuracyMeters: 25 };
 
-      expect((await checkIn({ location })).checkInLocation).toEqual(location);
-      expect((await checkIn()).checkInLocation).toBeNull();
+      const withLocation = await checkIn({ location });
+      expect(withLocation.checkInLocation).toEqual(location);
+      expect(withLocation.checkInPlace).toBe('Coblong, Bandung');
+
+      const without = await checkIn();
+      expect(without.checkInLocation).toBeNull();
+      expect(without.checkInPlace).toBeNull();
     });
 
     it('uses the Jakarta date, not the UTC date, as the work date', async () => {

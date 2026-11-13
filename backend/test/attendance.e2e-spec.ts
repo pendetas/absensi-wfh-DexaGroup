@@ -23,7 +23,7 @@ describe('Attendance (e2e)', () => {
 
   beforeAll(async () => {
     system = await TestSystem.start();
-    system.setJakartaTime('2026-11-09 08:30'); // a Monday
+    system.setJakartaTime('2026-11-09 08:30'); // Monday
     [hr, budi, siti] = await Promise.all([
       system.login('hr@dexa.test'),
       system.login('EMP002'),

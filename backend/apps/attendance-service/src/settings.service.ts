@@ -15,6 +15,7 @@ export class SettingsService {
     const settings = await this.settingsRepository.findOneByOrFail({ id: SETTINGS_ROW_ID });
     return {
       workStartTime: settings.workStartTime.slice(0, 5),
+      dailyWorkMinutes: settings.dailyWorkMinutes,
       updatedAt: settings.updatedAt.toISOString(),
       updatedByEmployeeId: settings.updatedByEmployeeId,
     };
@@ -23,9 +24,14 @@ export class SettingsService {
   /** Applies from the next check-in; existing records keep the start time they were judged by. */
   async update({
     workStartTime,
+    dailyWorkMinutes,
     updatedByEmployeeId,
   }: UpdateAttendanceSettingsPayload): Promise<AttendanceSettingsDto> {
-    await this.settingsRepository.update(SETTINGS_ROW_ID, { workStartTime, updatedByEmployeeId });
+    await this.settingsRepository.update(SETTINGS_ROW_ID, {
+      workStartTime,
+      ...(dailyWorkMinutes !== undefined ? { dailyWorkMinutes } : {}),
+      updatedByEmployeeId,
+    });
     return this.get();
   }
 }

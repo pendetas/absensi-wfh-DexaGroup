@@ -13,20 +13,13 @@ interface DialogProps {
   size?: 'sm' | 'md' | 'lg';
   /** Takes the whole screen on a phone, for the camera and for photo-heavy detail views. */
   fullScreenOnPhone?: boolean;
-  /**
-   * On wide screens, a full-height panel sliding in from the right instead of a centred box.
-   * For evidence HR reads next to the list it came from.
-   */
+  /** Full-height panel from the right on wide screens, so HR can read it next to the list. */
   drawer?: boolean;
 }
 
 const WIDTHS = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-3xl' };
 
-/**
- * Built on the native <dialog>: the browser traps focus, closes on Escape and returns focus
- * to the button that opened it. It enters with a short slide so the eye follows where it came
- * from: up from the bottom on a phone, in from the right for a drawer.
- */
+/** Native <dialog>: the browser traps focus, closes on Escape and returns focus to the opener. */
 export function Dialog({
   open,
   onClose,

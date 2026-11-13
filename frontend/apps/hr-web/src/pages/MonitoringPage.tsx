@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   addDays,
   api,
+  type Arrival,
   AttendanceDetailDialog,
   type AttendanceSettings,
   Button,
@@ -28,6 +29,7 @@ import {
 } from '@dexa/shared-ui';
 import { DepartmentSelect } from '../components/DepartmentSelect';
 import { ArrivalChart } from '../components/monitoring/ArrivalChart';
+import { ArrivalMap } from '../components/monitoring/ArrivalMap';
 import { MonitoringRow, ROW_GRID } from '../components/monitoring/MonitoringRow';
 import { RowsSkeleton, SummarySkeleton } from '../components/monitoring/MonitoringSkeleton';
 import {
@@ -40,10 +42,7 @@ const PAGE_SIZE = 20;
 const REFRESH_MS = 60_000;
 const HEADER_HEIGHT = 56;
 
-/**
- * Once the tiles scroll under the header, a slim copy of them follows HR down the list, so
- * the counts and filters stay one click away.
- */
+/** Slim copy of the tiles once they scroll away, so counts and filters stay one click away. */
 function useFollowingSummary() {
   const summaryRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -75,7 +74,6 @@ function useFollowingSummary() {
   return { summaryRef, barRef, following };
 }
 
-/** HR's home: everyone expected on a date, who is missing, and the proof for those present. */
 export function MonitoringPage() {
   const today = todayInJakarta();
   const [date, setDate] = useState(today);
@@ -154,6 +152,11 @@ export function MonitoringPage() {
     };
   }
   const changeStatus = change(setStatus);
+  /** Narrows the list below to the person picked on the chart or the map. */
+  function pickArrival(arrival: Arrival) {
+    setSearch(arrival.employeeCode);
+    changeStatus('ALL');
+  }
   const changeDate = change((next: string) => {
     setDate(next);
     setStatus('ALL');
@@ -163,7 +166,7 @@ export function MonitoringPage() {
 
   return (
     <>
-      {/* Height 0 and sticky under the header: holds the following summary bar. */}
+      {/* Zero-height sticky anchor under the header for the following summary bar. */}
       <div className="sticky top-14 z-20 -mx-4 h-0">
         <div
           ref={follow.barRef}
@@ -252,12 +255,10 @@ export function MonitoringPage() {
                   animateKey={data.date}
                   highlightedId={highlightedId}
                   onHighlight={setHighlightedId}
-                  onPick={(arrival) => {
-                    setSearch(arrival.employeeCode);
-                    changeStatus('ALL');
-                  }}
+                  onPick={pickArrival}
                   onShowMissing={() => changeStatus('NOT_CHECKED_IN')}
                 />
+                <ArrivalMap arrivals={data.arrivals} onPick={pickArrival} />
               </>
             )
           )}
@@ -340,6 +341,7 @@ export function MonitoringPage() {
                   key={row.employee.id}
                   row={row}
                   workStartTime={workStartTime}
+                  dailyWorkMinutes={settings.data?.dailyWorkMinutes ?? null}
                   isToday={isToday}
                   highlighted={highlightedId === row.employee.id}
                   onHighlight={setHighlightedId}

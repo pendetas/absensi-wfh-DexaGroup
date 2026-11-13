@@ -1,16 +1,18 @@
 # Sistem Absensi WFH Dexa Group
 
+[![CI](https://github.com/pendetas/absensi-wfh-DexaGroup/actions/workflows/ci.yml/badge.svg)](https://github.com/pendetas/absensi-wfh-DexaGroup/actions/workflows/ci.yml)
+
 Aplikasi absensi kerja dari rumah (WFH) untuk Fullstack Developer Skill Test Dexa Group.
 
-- **Karyawan** check-in dan check-out dengan foto langsung dari kamera. Jam dicatat oleh server, lokasi ikut dicatat jika diizinkan.
+- **Karyawan** check-in dan check-out dengan foto langsung dari kamera. Jam dicatat oleh server. Lokasi ikut dicatat jika diizinkan dan ditampilkan sebagai nama tempat, misalnya "Kuningan Timur, Jakarta", beserta petanya.
 - **Admin HR** mengelola data karyawan dan memantau absensi (hanya melihat, tidak bisa mengubah absensi).
 
 | Bagian | Teknologi |
 |---|---|
 | Backend | NestJS 11 (TypeScript), arsitektur microservices dengan transport TCP |
 | Database | MySQL 8.4, TypeORM dengan migration |
-| Frontend | React 19, Vite, TanStack Query, Tailwind CSS 4, GSAP |
-| Lainnya | Docker (untuk MySQL), Jest, Swagger |
+| Frontend | React 19, Vite, TanStack Query, Tailwind CSS 4, GSAP, Leaflet (peta OpenStreetMap) |
+| Lainnya | Docker Compose dan nginx (seluruh sistem dengan satu perintah), GitHub Actions, Jest, Swagger |
 
 ---
 
@@ -26,13 +28,43 @@ Aplikasi absensi kerja dari rumah (WFH) untuk Fullstack Developer Skill Test Dex
 8. [Keamanan](#keamanan)
 9. [Pengujian](#pengujian)
 10. [Struktur folder](#struktur-folder)
-11. [Yang belum dibuat](#yang-belum-dibuat)
+11. [Rekomendasi pengembangan](#rekomendasi-pengembangan)
 
 ---
 
 ## Cara menjalankan
 
-### Yang perlu disiapkan
+Ada dua cara. **Dengan Docker** paling mudah: cukup satu perintah, tanpa memasang Node.js atau MySQL. **Tanpa Docker** cocok untuk pengembangan, karena perubahan kode langsung terlihat.
+
+### Cara 1: dengan Docker (disarankan untuk mencoba)
+
+Yang perlu disiapkan hanya **Docker Desktop** (atau Docker Engine dengan Compose v2). Di folder utama repositori:
+
+```bash
+docker compose up --build
+```
+
+Pertama kali memakan waktu beberapa menit untuk membangun image. Setelah itu buka:
+
+| Aplikasi | Alamat |
+|---|---|
+| Aplikasi karyawan | http://karyawan.localhost:8080 |
+| Aplikasi HR | http://hr.localhost:8080 |
+| Dokumentasi API (Swagger) | http://localhost:3000/api/docs |
+| Cek kesehatan layanan | http://localhost:3000/api/health |
+
+- Perintah ini menyalakan MySQL, membuat tabel dan akun contoh, lalu menjalankan keempat layanan backend dan kedua aplikasi frontend. Urutannya diatur otomatis: layanan baru menyala setelah database siap.
+- File `.env` **tidak wajib**. Nilai bawaan di `docker-compose.yml` sudah cukup untuk dicoba di komputer sendiri. Jika `.env` ada, isinya dipakai.
+- Karena alamatnya berbeda, setiap aplikasi punya sesi login sendiri. Akun karyawan dan HR bisa dicoba bersamaan di satu browser, tanpa jendela incognito.
+- Jika browser tidak mengenali alamat `*.localhost`, pakai http://localhost:8081 (karyawan) dan http://localhost:8082 (HR).
+- Kamera dan lokasi tetap berfungsi karena browser menganggap `localhost` sebagai alamat aman.
+- Semua jam di dalam container memakai WIB, dan foto absensi disimpan di volume Docker sehingga tidak hilang saat container dinyalakan ulang.
+
+Menghentikan semuanya: `docker compose down`. Menghapus juga database dan fotonya: `docker compose down -v`.
+
+### Cara 2: tanpa Docker (untuk pengembangan)
+
+#### Yang perlu disiapkan
 
 - **Node.js 22 atau lebih baru** (dikembangkan dengan Node 24)
 - **MySQL 8**, pilih salah satu:
@@ -40,7 +72,7 @@ Aplikasi absensi kerja dari rumah (WFH) untuk Fullstack Developer Skill Test Dex
   - **MySQL yang sudah terpasang** di komputer (misalnya lewat Laragon, XAMPP, atau installer resmi)
 - Browser modern (Chrome, Edge, Firefox) dan **kamera** untuk check-in
 
-### 1. Siapkan file konfigurasi
+#### 1. Siapkan file konfigurasi
 
 ```bash
 cp .env.example .env
@@ -48,15 +80,15 @@ cp .env.example .env
 
 Isi bawaan `.env.example` sudah cocok untuk dijalankan di komputer sendiri. Untuk keamanan, ganti `JWT_SECRET` dengan teks acak yang panjang.
 
-### 2. Jalankan MySQL
+#### 2. Jalankan MySQL
 
-**Pilihan A, dengan Docker:**
+**Pilihan A, MySQL lewat Docker:**
 
 ```bash
-docker compose up -d
+docker compose up -d mysql
 ```
 
-Database `dexa_absensi` beserta user `dexa` dibuat otomatis dari isi `.env`.
+Hanya database yang dinyalakan. Database `dexa_absensi` beserta user `dexa` dibuat otomatis dari isi `.env`.
 
 **Pilihan B, tanpa Docker:** buat database dan user di MySQL Anda sesuai isi `.env`:
 
@@ -66,7 +98,7 @@ CREATE USER 'dexa'@'%' IDENTIFIED BY 'dexa_secret';
 GRANT ALL PRIVILEGES ON dexa_absensi.* TO 'dexa'@'%';
 ```
 
-### 3. Jalankan backend
+#### 3. Jalankan backend
 
 ```bash
 cd backend
@@ -78,7 +110,7 @@ npm run dev
 - `db:setup` menjalankan migration (membuat tabel) lalu seed (mengisi departemen dan akun contoh). Aman dijalankan ulang.
 - `dev` menjalankan empat program sekaligus: API gateway dan tiga microservice.
 
-### 4. Jalankan frontend
+#### 4. Jalankan frontend
 
 Di terminal lain:
 
@@ -88,7 +120,7 @@ npm install
 npm run dev
 ```
 
-### 5. Buka aplikasinya
+#### 5. Buka aplikasinya
 
 | Aplikasi | Alamat |
 |---|---|
@@ -113,23 +145,25 @@ Semua akun contoh memakai password **`Password123!`**. Login bisa dengan email a
 | Andi Pratama | andi@dexa.test | EMP004 | Karyawan |
 | Dewi Lestari | dewi@dexa.test | EMP005 | Karyawan |
 
-Untuk mengembalikan akun-akun ini ke keadaan awal (password, status aktif, kunci login), jalankan `npm run db:seed` di folder `backend`.
+Untuk mengembalikan akun-akun ini ke keadaan awal (password, status aktif, kunci login), jalankan `docker compose run --rm migrate` (cara Docker) atau `npm run db:seed` di folder `backend` (tanpa Docker).
 
 ---
 
 ## Alur untuk dicoba
 
-**Sebagai karyawan** (http://localhost:5173, login sebagai `siti@dexa.test`):
+Alamat di bawah untuk cara Docker. Tanpa Docker, aplikasi karyawan ada di http://localhost:5173 dan aplikasi HR di http://localhost:5174 (buka di jendela incognito).
 
-1. Halaman **Hari ini** menampilkan jam server, penggaris waktu dengan garis jam masuk 09.00, dan kalimat seperti "Lewat 15 mnt dari jam masuk".
-2. Tekan **Check-in sekarang**, izinkan kamera, ambil foto (bisa diulang), tambahkan catatan, lalu **Kirim check-in**. Status langsung tercatat: tepat waktu atau terlambat.
-3. Buka **Riwayat** untuk melihat absensi per bulan. Tekan satu hari untuk melihat foto dan lokasinya.
+**Sebagai karyawan** (http://karyawan.localhost:8080, login sebagai `siti@dexa.test`):
+
+1. Halaman **Hari ini** menampilkan jam server, penggaris waktu dengan garis jam masuk 09.00, dan kalimat seperti "Lewat 15 mnt dari jam masuk". Di sampingnya ada jam kerja hari ini terhadap target harian, total jam kerja minggu ini, dan ringkasan bulan ini.
+2. Tekan **Check-in sekarang**, izinkan kamera dan lokasi, ambil foto (bisa diulang), tambahkan catatan, lalu **Kirim check-in**. Status langsung tercatat: tepat waktu atau terlambat.
+3. Buka **Riwayat** untuk melihat kalender bulan ini: hari tepat waktu, terlambat, dan hari kerja tanpa check-in langsung terlihat dari warnanya. Tekan satu hari untuk melihat jamnya, lalu **Lihat foto dan lokasi** untuk foto, nama tempat, dan petanya.
 4. Kembali ke **Hari ini** dan lakukan **Check-out** dengan foto.
 
-**Sebagai HR** (http://localhost:5174 di jendela incognito, login sebagai `EMP001`):
+**Sebagai HR** (http://hr.localhost:8080, login sebagai `EMP001`):
 
-1. Halaman **Absensi** menampilkan jumlah tepat waktu, terlambat, dan belum absen, grafik sebaran jam check-in, dan daftar semua karyawan. Tekan baris Siti untuk melihat foto, lokasi, dan catatannya.
-2. Di **Pengaturan**, ubah jam masuk (misalnya ke 17:00). Check-in berikutnya dinilai dengan jam baru, sedangkan absensi lama tidak berubah.
+1. Halaman **Absensi** menampilkan jumlah tepat waktu, terlambat, dan belum absen, grafik sebaran jam check-in, peta lokasi check-in, dan daftar semua karyawan. Tekan baris Siti untuk melihat foto, lokasi, dan catatannya.
+2. Di **Pengaturan**, ubah jam masuk (misalnya ke 17:00) atau target jam kerja harian. Check-in berikutnya dinilai dengan jam baru, sedangkan absensi lama tidak berubah.
 3. Di **Karyawan**, tambahkan karyawan baru. Sistem membuat NIK dan **password sementara** yang hanya ditampilkan sekali.
 4. Login sebagai karyawan baru itu di aplikasi karyawan. Ia **wajib mengganti password** sebelum bisa melakukan apa pun.
 5. Coba juga reset password, jadikan admin HR, nonaktifkan, dan aktifkan kembali karyawan.
@@ -139,11 +173,13 @@ Untuk mengembalikan akun-akun ini ke keadaan awal (password, status aktif, kunci
 ## Arsitektur
 
 ```
- Aplikasi karyawan (5173) ─┐
-                           ├─► API gateway (HTTP 3000) ──TCP──► auth-service       (4001) ─┐
- Aplikasi HR (5174) ───────┘                              ├────► employee-service   (4002) ─┼─► MySQL
-                                                          └────► attendance-service (4003) ─┘
+ Aplikasi karyawan ─┐
+                    ├─► API gateway (HTTP 3000) ──TCP──► auth-service       (4001) ─┐
+ Aplikasi HR ───────┘                              ├────► employee-service   (4002) ─┼─► MySQL
+                                                   └────► attendance-service (4003) ─┘
 ```
+
+Di Docker, kedua aplikasi disajikan oleh **nginx**, yang juga meneruskan `/api` ke gateway. Saat pengembangan, tugas yang sama dikerjakan server Vite. Dengan begitu browser selalu melihat satu alamat untuk aplikasi dan API-nya, dan cookie sesi tidak perlu dikirim lintas alamat.
 
 **API gateway** adalah satu-satunya pintu masuk HTTP. Tugasnya:
 
@@ -263,11 +299,12 @@ Semua alamat diawali `/api`. Dokumentasi lengkap yang bisa langsung dicoba ada d
 | POST | `/attendance/check-in` | Login | Check-in dengan foto |
 | POST | `/attendance/check-out` | Login | Check-out dengan foto |
 | GET | `/attendance/me` | Login | Riwayat absensi sendiri |
-| GET | `/attendance/settings` | Login | Jam masuk yang berlaku |
+| GET | `/attendance/settings` | Login | Jam masuk dan target jam kerja yang berlaku |
+| GET | `/attendance/place` | Login | Nama tempat untuk satu titik lokasi |
 | GET | `/attendance/:id/photos/:kind` | Login | Foto absensi (milik sendiri, atau semua untuk HR) |
 | GET | `/attendance/monitoring` | HR | Absensi semua karyawan pada satu tanggal |
 | GET | `/attendance/employees/:id` | HR | Riwayat absensi satu karyawan |
-| PUT | `/attendance/settings` | HR | Mengubah jam masuk |
+| PUT | `/attendance/settings` | HR | Mengubah jam masuk dan target jam kerja |
 | GET | `/employees` | HR | Daftar karyawan (cari, saring, halaman) |
 | GET | `/employees/:id` | HR | Detail karyawan beserta status akun |
 | POST | `/employees` | HR | Menambah karyawan dan akun login |
@@ -287,11 +324,13 @@ Semua alamat diawali `/api`. Dokumentasi lengkap yang bisa langsung dicoba ada d
 |---|---|
 | **Tidak ada pendaftaran mandiri.** HR menambahkan karyawan, sistem membuat NIK dan password sementara. | Seperti sistem HR pada umumnya: yang boleh absen hanya karyawan yang terdaftar resmi. |
 | **Password sementara wajib diganti** saat login pertama. | HR tidak pernah mengetahui password akhir karyawan. |
-| **Lupa password = minta reset ke HR.** | Tidak butuh server email untuk tes ini. Pengembangan lanjutan ada di bagian akhir. |
+| **Lupa password = minta reset ke HR.** | Tidak butuh server email untuk tes ini. Lihat [Rekomendasi pengembangan](#rekomendasi-pengembangan). |
 | **Login dengan email atau NIK**, pilihan "Percayai perangkat ini selama 7 hari". | Karyawan absen setiap hari, jadi tidak perlu login ulang terus-menerus di perangkat pribadinya. |
 | **Foto hanya dari kamera langsung**, tanpa pilihan dari galeri. Nama, NIK, dan jam dicetak di foto. | Foto lama atau foto orang lain tidak bisa dipakai sebagai bukti. |
 | **Jam dicatat oleh server**, bukan dari perangkat. | Jam di HP bisa diubah oleh pengguna. |
-| **Lokasi ikut dicatat jika diizinkan**, tetapi tidak wajib. | Menambah bukti bagi HR tanpa menghalangi karyawan yang menolak izin lokasi. |
+| **Lokasi ikut dicatat jika diizinkan**, tetapi tidak wajib, dan tidak ada batas wilayah. | WFH di sini berarti kerja dari mana saja. Lokasi adalah bukti tambahan bagi HR, bukan syarat absen. |
+| **Lokasi ditampilkan sebagai nama tempat dan peta**, bukan koordinat atau angka akurasi. | Mudah dibaca karyawan dan HR. Jika perangkat hanya menebak lokasi dari koneksi internet (meleset puluhan km), lokasi ditulis "tidak dapat dipastikan" dan tidak dipasang di peta. |
+| **Target jam kerja harian** (bawaan 8 jam), bisa diubah HR. | Banyak perusahaan menilai total jam kerja, bukan hanya jam masuk. Jam kerja dihitung dari check-in sampai check-out. |
 | **Jam masuk 09.00 tanpa toleransi**, bisa diubah HR kapan saja. | Satu aturan yang jelas. Jika butuh kelonggaran, HR cukup menggeser jam masuk. |
 | **Status terlambat disimpan saat check-in**, beserta jam masuk yang berlaku saat itu. | Mengubah jam masuk tidak mengubah penilaian absensi yang sudah ada. |
 | **Senin sampai Jumat** dihitung hari kerja. Check-in di akhir pekan tetap bisa, tanpa status terlambat. | Karyawan yang lembur tetap tercatat, tanpa dianggap tidak hadir di hari libur. |
@@ -315,6 +354,7 @@ Arah tampilan (warna, huruf, gerak, alasan tiap pilihan) dijelaskan di [DESIGN.m
 - **Peran diperiksa di backend** untuk setiap rute HR (balasan 403), bukan hanya disembunyikan di tampilan.
 - **Upload foto** diperiksa dari isi file (bukan nama file), maksimal 2 MB, disimpan dengan nama acak, dan hanya bisa diambil oleh pemiliknya atau HR.
 - **Header keamanan** dengan Helmet, dan **CORS** hanya untuk alamat kedua aplikasi frontend.
+- **Lokasi dan pihak ketiga:** nama tempat dicari lewat OpenStreetMap Nominatim oleh backend, bukan oleh browser. Yang dikirim hanya titik lokasi, tanpa nama atau NIK. Hasilnya disimpan sementara di memori agar tidak bertanya berulang kali. Fitur ini bisa dimatikan dengan `GEOCODER_ENABLED=false`, dan absensi tetap berjalan tanpa nama tempat. Gambar peta dimuat browser langsung dari server peta OpenStreetMap.
 - **Input** divalidasi dengan DTO. Isian yang tidak dikenal dibuang, sehingga misalnya peran tidak bisa diselundupkan lewat form.
 
 ---
@@ -327,7 +367,7 @@ Di folder `backend`:
 npm test
 ```
 
-Menjalankan 67 unit test: aturan terlambat, zona waktu WIB, login dan penguncian akun, pembuatan NIK, format nomor HP, deteksi jenis gambar, dan aturan password.
+Menjalankan 73 unit test: aturan terlambat, zona waktu WIB, login dan penguncian akun, pembuatan NIK, format nomor HP, deteksi jenis gambar, dan aturan password.
 
 ```bash
 npm run test:e2e
@@ -341,7 +381,11 @@ Pemeriksaan kode:
 npm run lint
 ```
 
-Di folder `frontend`, pemeriksaan tipe dan build:
+Di folder `frontend`, pemeriksaan kode, tipe, dan build:
+
+```bash
+npm run lint
+```
 
 ```bash
 npm run typecheck
@@ -351,13 +395,27 @@ npm run typecheck
 npm run build
 ```
 
+### CI (GitHub Actions)
+
+Setiap push ke `main` dan setiap pull request menjalankan tiga pemeriksaan sekaligus (`.github/workflows/ci.yml`):
+
+| Pemeriksaan | Isi |
+|---|---|
+| Backend | Lint, build, unit test, migration dan seed ke MySQL sungguhan, lalu test end-to-end |
+| Frontend | Lint, pemeriksaan tipe, dan build kedua aplikasi |
+| Docker | Membangun dan menyalakan seluruh sistem, lalu memeriksa bahwa semua layanan terhubung ke database, kedua aplikasi tampil, dan login lewat nginx berhasil |
+
+Server GitHub memakai zona waktu UTC, sehingga test yang lolos di sana juga membuktikan aturan WIB tidak bergantung pada zona waktu server. Statusnya terlihat dari lencana CI di bagian atas halaman ini.
+
 ---
 
 ## Struktur folder
 
 ```
 .
+├── .github/workflows/ci.yml      pemeriksaan otomatis (GitHub Actions)
 ├── backend/
+│   ├── Dockerfile                satu image untuk keempat layanan
 │   ├── apps/
 │   │   ├── api-gateway/          pintu masuk HTTP, validasi, guard, Swagger
 │   │   ├── auth-service/         login, sesi, akun
@@ -368,26 +426,28 @@ npm run build
 │   ├── scripts/seed.ts           data contoh
 │   └── test/                     test end-to-end
 ├── frontend/
+│   ├── Dockerfile                build kedua aplikasi, disajikan nginx
+│   ├── nginx/                    alamat per aplikasi dan penerusan /api
 │   ├── apps/
 │   │   ├── employee-web/         aplikasi karyawan
 │   │   └── hr-web/               aplikasi HR
 │   └── packages/shared-ui/       komponen dan logika bersama
-├── docker-compose.yml            MySQL
+├── docker-compose.yml            seluruh sistem, atau MySQL saja untuk pengembangan
 ├── .env.example                  contoh konfigurasi
 └── DESIGN.md                     arah tampilan
 ```
 
 ---
 
-## Yang belum dibuat
+## Rekomendasi pengembangan
 
-Hal-hal berikut sengaja di luar cakupan tes ini, tetapi strukturnya sudah disiapkan:
+Hal-hal berikut sengaja di luar cakupan tes ini dan direkomendasikan untuk tahap berikutnya:
 
 - **Undangan dan lupa password lewat email**, melalui layanan notifikasi terpisah, sebagai pengganti password sementara dari HR.
-- **Jadwal per karyawan atau per tanggal**, seperti setengah hari, hari libur nasional, atau acara kantor.
-- **Pengajuan koreksi absensi** dengan persetujuan HR, misalnya untuk lupa check-out.
+- **Kalender kerja**: hari kerja yang bisa diatur, hari libur nasional, cuti bersama, dan jadwal setengah hari.
+- **Pengajuan koreksi absensi** dengan persetujuan HR, misalnya untuk lupa check-out. Ini mengubah peran HR dari hanya melihat menjadi ikut menyetujui, jadi perlu kesepakatan kebijakan lebih dulu.
+- **Pengajuan WFH dan cuti** dengan persetujuan atasan, jika perusahaan menerapkan hari kerja di kantor. Saat ini semua hari kerja dianggap WFH (bekerja dari mana saja), sehingga tidak perlu pengajuan.
 - **Penyimpanan foto di cloud** (misalnya S3). Penyimpanan foto sudah dipisah dalam satu kelas sehingga mudah diganti.
-- **Verifikasi wajah atau batas lokasi** untuk bukti WFH yang lebih kuat.
+- **Verifikasi wajah** untuk bukti absen yang lebih kuat.
 - **Ekspor laporan** absensi ke CSV atau Excel.
 - **Mode gelap.**
-- **Satu perintah Docker** untuk menjalankan seluruh sistem (backend, frontend, dan database sekaligus).

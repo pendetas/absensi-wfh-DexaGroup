@@ -7,9 +7,11 @@ import {
   type CheckOutPayload,
   type FindAttendanceHistoryPayload,
   type FindPhotoPayload,
+  type GeoLocation,
   type UpdateAttendanceSettingsPayload,
 } from '@app/common';
 import { AttendanceService } from './attendance.service';
+import { PlaceService } from './place.service';
 import { SettingsService } from './settings.service';
 
 @Controller()
@@ -17,6 +19,7 @@ export class AttendanceController {
   constructor(
     private readonly attendanceService: AttendanceService,
     private readonly settingsService: SettingsService,
+    private readonly placeService: PlaceService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -54,6 +57,12 @@ export class AttendanceController {
   @MessagePattern(ATTENDANCE_PATTERNS.FIND_PHOTO)
   findPhoto(@Payload() payload: FindPhotoPayload) {
     return this.attendanceService.findPhoto(payload);
+  }
+
+  /** For the camera screen, before check-in: where the device says it is, in words. */
+  @MessagePattern(ATTENDANCE_PATTERNS.DESCRIBE_PLACE)
+  describePlace(@Payload() payload: GeoLocation) {
+    return this.placeService.describe(payload);
   }
 
   @MessagePattern(ATTENDANCE_PATTERNS.GET_SETTINGS)

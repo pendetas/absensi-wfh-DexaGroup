@@ -14,6 +14,7 @@ import {
   formatDate,
   formatDateTime,
   Icon,
+  MONTH_PAGE_SIZE,
   MonthHistory,
   Panel,
   Skeleton,
@@ -28,8 +29,6 @@ import {
   TemporaryPasswordDialog,
 } from '../components/TemporaryPasswordDialog';
 import { ACCOUNT_STATUS } from '../lib/employees';
-
-const MONTH_PAGE_SIZE = 31;
 
 type Action = 'edit' | 'reset' | 'role' | 'deactivate' | 'reactivate';
 type WithPassword = { employee?: EmployeeWithAccount; temporaryPassword: string };

@@ -11,7 +11,7 @@ export class AttendanceRules1794294756241 implements MigrationInterface {
     await queryRunner.query(
       `INSERT INTO \`attendance_settings\` (\`id\`, \`work_start_time\`) VALUES (1, '09:00:00')`,
     );
-    // Renamed rather than dropped and re-added (what the generator proposed) to keep any data.
+    // Renamed rather than dropped and re-added, so existing data is kept.
     await queryRunner.query(
       `ALTER TABLE \`attendances\` CHANGE \`notes\` \`check_in_note\` varchar(255) NULL`,
     );

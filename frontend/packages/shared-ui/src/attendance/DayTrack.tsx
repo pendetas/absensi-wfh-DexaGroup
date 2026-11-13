@@ -1,16 +1,12 @@
 import { cn } from '../lib/cn';
-import { minutesOfDayInJakarta } from '../lib/format';
+import { minutesOfDayInJakarta, minutesOfTime } from '../lib/format';
 import type { Attendance } from '../lib/types';
 
 const FROM = 7 * 60;
 const SPAN = 12 * 60;
 const pct = (minutes: number) => Math.min(100, Math.max(0, ((minutes - FROM) / SPAN) * 100));
 
-/**
- * One day from 07.00 to 19.00 on a thin line: the dashed work start line, and a bar from
- * check-in to check-out. An open record fades out at "now" (today) or after an hour (a missed
- * check-out), so it never claims an end time that wasn't recorded.
- */
+/** An open record fades out at now or after an hour (missed check-out): no end time is invented. */
 export function DayTrack({
   attendance,
   workStartTime,
@@ -23,9 +19,7 @@ export function DayTrack({
   isToday: boolean;
   className?: string;
 }) {
-  const start = workStartTime
-    ? Number(workStartTime.slice(0, 2)) * 60 + Number(workStartTime.slice(3, 5))
-    : null;
+  const start = workStartTime ? minutesOfTime(workStartTime) : null;
   const checkIn = attendance ? minutesOfDayInJakarta(attendance.checkInAt) : null;
   const end = attendance?.checkOutAt
     ? minutesOfDayInJakarta(attendance.checkOutAt)

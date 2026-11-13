@@ -1,5 +1,12 @@
 import { useRef } from 'react';
-import { cn, type DailyMonitoring, type DailyStatus, gsap, useGSAP } from '@dexa/shared-ui';
+import {
+  cn,
+  type DailyMonitoring,
+  type DailyStatus,
+  gsap,
+  statusLabel,
+  useGSAP,
+} from '@dexa/shared-ui';
 
 export type StatusFilter = DailyStatus | 'ALL';
 
@@ -21,14 +28,19 @@ export function filterOptions(day: DailyMonitoring): FilterOption[] {
       ? [
           {
             value: 'NOT_CHECKED_IN' as const,
-            label: 'Belum absen',
+            label: statusLabel('NOT_CHECKED_IN'),
             count: summary.notCheckedIn,
             mark: 'bg-ink',
           },
-          { value: 'LATE' as const, label: 'Terlambat', count: summary.late, mark: 'bg-warn-mark' },
+          {
+            value: 'LATE' as const,
+            label: statusLabel('LATE'),
+            count: summary.late,
+            mark: 'bg-warn-mark',
+          },
           {
             value: 'ON_TIME' as const,
-            label: 'Tepat waktu',
+            label: statusLabel('ON_TIME'),
             count: summary.onTime,
             mark: 'bg-ok-mark',
           },

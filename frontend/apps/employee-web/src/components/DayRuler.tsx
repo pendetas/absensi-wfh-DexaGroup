@@ -1,12 +1,11 @@
 import { useRef } from 'react';
-import { gsap, minutesOfDayInJakarta, useGSAP } from '@dexa/shared-ui';
+import { gsap, minutesOfDayInJakarta, minutesOfTime, useGSAP } from '@dexa/shared-ui';
 
 const FROM = 6 * 60;
 const SPAN = 12 * 60;
 const HOURS = Array.from({ length: 13 }, (_, index) => 6 + index);
 const pct = (minutes: number) => Math.min(100, Math.max(0, ((minutes - FROM) / SPAN) * 100));
 
-/** A recorded moment on the ruler. Drops into place when it first appears. */
 function Marker({ minutes, label }: { minutes: number; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useGSAP(
@@ -29,11 +28,7 @@ function Marker({ minutes, label }: { minutes: number; label: string }) {
   );
 }
 
-/**
- * 06.00 to 18.00 under the clock: now as a white dot, the work start time as a dashed line,
- * and today's check-in and check-out as dark marks. The sentence below it says the same in
- * words, so nothing depends on reading the ruler.
- */
+/** 06.00 to 18.00; the sentence below repeats it in words, so nothing depends on the ruler. */
 export function DayRuler({
   now,
   workStartTime,
@@ -46,9 +41,7 @@ export function DayRuler({
   checkInAt: string | null;
   checkOutAt: string | null;
 }) {
-  const start = workStartTime
-    ? Number(workStartTime.slice(0, 2)) * 60 + Number(workStartTime.slice(3, 5))
-    : null;
+  const start = workStartTime ? minutesOfTime(workStartTime) : null;
   const nowMinutes = minutesOfDayInJakarta(now) + now.getUTCSeconds() / 60;
 
   return (

@@ -16,10 +16,7 @@ interface SessionGateProps {
   children: ReactNode;
 }
 
-/**
- * Decides what the visitor sees before the app: a wait while the session is restored, the
- * login form, the forced password change, or a "no access" page.
- */
+/** Restore wait, login, forced password change or "no access", whichever applies before the app. */
 export function SessionGate({
   appLabel,
   loginIntro,

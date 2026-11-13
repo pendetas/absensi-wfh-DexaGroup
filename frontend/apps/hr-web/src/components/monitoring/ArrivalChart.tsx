@@ -3,22 +3,17 @@ import {
   type Arrival,
   Button,
   cn,
+  formatMinutesOfDay,
   formatTime,
   gsap,
   minutesOfDayInJakarta,
+  minutesOfTime,
   useGSAP,
 } from '@dexa/shared-ui';
 
 const DOT = 28;
 const GAP = 3;
 const AXIS_SPACE = 22;
-
-function toMinutes(time: string): number {
-  return Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
-}
-
-const hhmm = (minutes: number) =>
-  `${String(Math.floor(minutes / 60)).padStart(2, '0')}.${String(minutes % 60).padStart(2, '0')}`;
 
 const initials = (name: string) =>
   name
@@ -34,11 +29,7 @@ interface PlacedDot extends Arrival {
   minutes: number;
 }
 
-/**
- * Everyone's check-in time on one axis against the work start line: one dot per person,
- * stacked where times are close. HR sees the shape of the morning at a glance, and who
- * crossed the line.
- */
+/** One dot per check-in against the work start line, stacked where times are close. */
 export function ArrivalChart({
   arrivals,
   workStartTime,
@@ -74,7 +65,7 @@ export function ArrivalChart({
     return () => observer.disconnect();
   }, []);
 
-  const start = workStartTime ? toMinutes(workStartTime) : null;
+  const start = workStartTime ? minutesOfTime(workStartTime) : null;
 
   const { dots, from, to, height, ticks } = useMemo(() => {
     const times = arrivals.map((arrival) => minutesOfDayInJakarta(arrival.checkInAt));
@@ -82,7 +73,11 @@ export function ArrivalChart({
     const earliest = Math.min(anchor - 60, ...times) - 5;
     const latest = Math.max(anchor + 60, ...times) + 5;
     // Hourly labels for a long day, half-hourly for a short one; the edges land on a label.
-    const step = latest - earliest > 300 ? 60 : 30;
+    // About 48px per label, so they never run together on a phone.
+    const step =
+      [30, 60, 120, 180].find(
+        (candidate) => (latest - earliest) / candidate <= Math.max(width, 1) / 48,
+      ) ?? 240;
     let low = Math.floor(earliest / step) * step;
     let high = Math.ceil(latest / step) * step;
     if (high - low < 180) {
@@ -158,7 +153,7 @@ export function ArrivalChart({
               className="absolute bottom-0 -translate-x-1/2 text-xs font-semibold text-ink-soft"
               style={{ left: tick.x }}
             >
-              {hhmm(tick.minutes)}
+              {formatMinutesOfDay(tick.minutes)}
             </span>
           ))}
           {startX !== null && (

@@ -23,10 +23,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
-/**
- * A red bar under the current page that slides to whichever link the pointer is on and back,
- * so moving between pages shows where you went.
- */
+/** Underline follows the hovered link and slides back, so a page change shows where you went. */
 function useSlidingInk(followHover: boolean) {
   const navRef = useRef<HTMLElement>(null);
   const inkRef = useRef<HTMLSpanElement>(null);
@@ -77,10 +74,7 @@ function useSlidingInk(followHover: boolean) {
   return { navRef, inkRef, hoverProps };
 }
 
-/**
- * Top bar with inline navigation on wide screens; on a phone the same destinations move to a
- * bottom bar within thumb reach. No hidden menu: every destination is always visible.
- */
+/** On a phone the nav moves to a bottom bar within thumb reach; no hidden menu. */
 export function AppShell({ appLabel, nav, userName, userCode, children }: AppShellProps) {
   const top = useSlidingInk(true);
   const bottom = useSlidingInk(false);
@@ -169,7 +163,6 @@ export function AppShell({ appLabel, nav, userName, userCode, children }: AppShe
   );
 }
 
-/** Page title with an optional line of context and actions on the right. */
 export function PageHeader({
   title,
   description,
@@ -190,7 +183,6 @@ export function PageHeader({
   );
 }
 
-/** White surface with a hairline border: the one container style both apps use. */
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <section className={cn('rounded-lg border border-line bg-paper', className)}>

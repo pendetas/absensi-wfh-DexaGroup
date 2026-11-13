@@ -5,36 +5,62 @@ import {
   cn,
   type DailyRow,
   DayTrack,
+  describeLocation,
+  formatDuration,
   formatTime,
+  minutesBetween,
 } from '@dexa/shared-ui';
 
 export const ROW_GRID =
-  'grid-cols-[3.25rem_minmax(0,1fr)_auto] md:grid-cols-[3.25rem_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,1fr)_9.5rem]';
+  'grid-cols-[3.25rem_minmax(0,1fr)] md:grid-cols-[3.25rem_minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,1fr)_9.5rem]';
 
-function Times({ attendance }: { attendance: Attendance }) {
+function Times({
+  attendance,
+  dailyWorkMinutes,
+}: {
+  attendance: Attendance;
+  dailyWorkMinutes: number | null;
+}) {
   const note = attendance.checkInNote ?? attendance.checkOutNote;
+  const worked = attendance.checkOutAt
+    ? minutesBetween(attendance.checkInAt, attendance.checkOutAt)
+    : null;
+  const short = worked !== null && dailyWorkMinutes !== null && worked < dailyWorkMinutes;
+  // Same wording as the map panel, so the row and the map never disagree.
+  const place = describeLocation(attendance.checkInLocation, attendance.checkInPlace);
+  const detail = note ? `${place}, catatan: ${note}` : place;
   return (
     <span className="block min-w-0">
       <span className="font-bold">
         {formatTime(attendance.checkInAt)}
         <span className="font-normal text-ink-soft"> sampai </span>
-        {attendance.checkOutAt ? formatTime(attendance.checkOutAt) : 'belum'}
+        {attendance.checkOutAt ? (
+          formatTime(attendance.checkOutAt)
+        ) : (
+          <>
+            <span aria-hidden="true">-</span>
+            <span className="sr-only">belum check-out</span>
+          </>
+        )}
       </span>
-      <span className="block truncate text-xs text-ink-soft">
-        {attendance.checkInLocation ? 'Lokasi ada' : 'Tanpa lokasi'}
-        {note && `, catatan: ${note}`}
+      {worked !== null && (
+        <span className={cn('block text-xs font-semibold', short ? 'text-warn' : 'text-ok')}>
+          {formatDuration(worked)}
+          {short && `, kurang ${formatDuration(dailyWorkMinutes! - worked)}`}
+        </span>
+      )}
+      <span className="block truncate text-xs text-ink-soft" title={detail}>
+        {detail}
       </span>
     </span>
   );
 }
 
-/**
- * One employee on the date. A row with a check-in is a button that opens the photos; a row
- * without one is plain text, since there is nothing to open.
- */
+/** Only a row with a check-in is a button; without one there are no photos to open. */
 export function MonitoringRow({
   row,
   workStartTime,
+  dailyWorkMinutes,
   isToday,
   highlighted,
   onHighlight,
@@ -42,6 +68,8 @@ export function MonitoringRow({
 }: {
   row: DailyRow;
   workStartTime: string | null;
+  /** Daily target for the "kurang" note; null until settings load. */
+  dailyWorkMinutes: number | null;
   isToday: boolean;
   highlighted: boolean;
   onHighlight: (employeeId: number | null) => void;
@@ -76,7 +104,8 @@ export function MonitoringRow({
         </span>
       </span>
 
-      <span className="justify-self-end md:order-last md:justify-self-start">
+      {/* On a phone the badge gets its own line, so a long "Terlambat" never squeezes the name. */}
+      <span className="col-start-2 md:order-last md:col-start-auto">
         <AttendanceStatusBadge status={row.status} attendance={attendance} />
       </span>
 
@@ -84,12 +113,12 @@ export function MonitoringRow({
         attendance={attendance}
         workStartTime={attendance?.workStartTime ?? workStartTime}
         isToday={isToday}
-        className="col-span-2 col-start-2 md:col-span-1 md:col-start-auto"
+        className="col-start-2 md:col-start-auto"
       />
 
-      <span className="col-span-2 col-start-2 text-sm md:col-span-1 md:col-start-auto">
+      <span className="col-start-2 text-sm md:col-start-auto">
         {attendance ? (
-          <Times attendance={attendance} />
+          <Times attendance={attendance} dailyWorkMinutes={dailyWorkMinutes} />
         ) : (
           <span className="text-ink-soft">Tidak ada check-in</span>
         )}

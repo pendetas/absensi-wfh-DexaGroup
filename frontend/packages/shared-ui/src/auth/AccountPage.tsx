@@ -13,7 +13,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Profile (read-only: HR owns the data), password change and logout. */
+/** The profile is read-only: HR owns that data. */
 export function AccountPage({ otherApp }: { otherApp?: { label: string; href: string } }) {
   const { logout } = useAuth();
   const { user, employee } = useCurrentUser();

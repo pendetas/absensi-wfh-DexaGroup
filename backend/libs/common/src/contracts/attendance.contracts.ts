@@ -56,6 +56,20 @@ export interface AttendanceDto {
   checkOutNote: string | null;
   checkInLocation: GeoLocation | null;
   checkOutLocation: GeoLocation | null;
+  /** Readable place for the location, e.g. "Coblong, Bandung, Jawa Barat"; null if unknown. */
+  checkInPlace: string | null;
+  checkOutPlace: string | null;
+}
+
+/**
+ * How far a location can be trusted, from the device's own accuracy: "precise" to the
+ * neighbourhood, "approximate" to the city, "unknown" when the device could only guess.
+ */
+export type LocationPrecision = 'precise' | 'approximate' | 'unknown';
+
+export interface PlaceResult {
+  place: string | null;
+  precision: LocationPrecision;
 }
 
 export interface TodayAttendance {
@@ -63,6 +77,7 @@ export interface TodayAttendance {
   serverTime: string;
   isWorkingDay: boolean;
   workStartTime: string;
+  dailyWorkMinutes: number;
   attendance: AttendanceDto | null;
 }
 
@@ -102,11 +117,14 @@ export interface PhotoResult {
 export interface AttendanceSettingsDto {
   /** HH:mm */
   workStartTime: string;
+  /** Measured from check-in to check-out. */
+  dailyWorkMinutes: number;
   updatedAt: string;
   updatedByEmployeeId: number | null;
 }
 
 export interface UpdateAttendanceSettingsPayload {
   workStartTime: string;
+  dailyWorkMinutes?: number;
   updatedByEmployeeId: number;
 }

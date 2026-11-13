@@ -85,6 +85,9 @@ export interface Attendance {
   checkOutNote: string | null;
   checkInLocation: GeoLocation | null;
   checkOutLocation: GeoLocation | null;
+  /** Readable place, e.g. "Coblong, Bandung, Jawa Barat"; null when unknown. */
+  checkInPlace: string | null;
+  checkOutPlace: string | null;
 }
 
 export interface TodayAttendance {
@@ -92,6 +95,8 @@ export interface TodayAttendance {
   serverTime: string;
   isWorkingDay: boolean;
   workStartTime: string;
+  /** Expected working time per day, in minutes. */
+  dailyWorkMinutes: number;
   attendance: Attendance | null;
 }
 
@@ -129,10 +134,18 @@ export interface Arrival {
   fullName: string;
   checkInAt: string;
   status: AttendanceStatus;
+  location: GeoLocation | null;
+  place: string | null;
 }
 
 export interface AttendanceSettings {
   workStartTime: string;
+  dailyWorkMinutes: number;
   updatedAt: string;
   updatedByEmployeeId: number | null;
+}
+
+export interface PlaceResult {
+  place: string | null;
+  precision: 'precise' | 'approximate' | 'unknown';
 }

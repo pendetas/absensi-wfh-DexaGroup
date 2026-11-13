@@ -10,10 +10,7 @@ const MIN_LENGTH = 8;
 const meetsPolicy = (password: string) =>
   password.length >= MIN_LENGTH && /[A-Za-z]/.test(password) && /\d/.test(password);
 
-/**
- * `forced` is the first login with a temporary password: nothing else is reachable until it
- * is replaced, so there is no way back, only "Keluar".
- */
+/** `forced`: first login with a temporary password; nothing else is reachable until it changes. */
 export function ChangePasswordPage({ forced = false }: { forced?: boolean }) {
   const { changePassword, logout } = useAuth();
   const navigate = useNavigate();

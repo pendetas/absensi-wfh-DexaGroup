@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
   Min,
   ValidateIf,
@@ -110,8 +111,38 @@ export class MonitoringQueryDto extends PageQueryDto {
   status?: DailyStatus;
 }
 
+/** A device position to describe in words, for the camera screen. */
+export class PlaceQueryDto {
+  @ApiProperty({ example: -6.8915 })
+  @Type(() => Number)
+  @IsLatitude({ message: 'Lokasi tidak valid' })
+  latitude: number;
+
+  @ApiProperty({ example: 107.6107 })
+  @Type(() => Number)
+  @IsLongitude({ message: 'Lokasi tidak valid' })
+  longitude: number;
+
+  @ApiPropertyOptional({ example: 25, description: 'Accuracy radius in metres' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Lokasi tidak valid' })
+  @Min(0, { message: 'Lokasi tidak valid' })
+  accuracy?: number;
+}
+
 export class UpdateAttendanceSettingsDto {
   @ApiProperty({ example: '09:00', description: '24-hour HH:mm, Jakarta time' })
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'Jam masuk harus berformat HH:mm, mis. 09:00' })
   workStartTime: string;
+
+  @ApiPropertyOptional({
+    example: 480,
+    description: 'Expected working time per day in minutes (60 to 960); unchanged if omitted',
+  })
+  @IsOptional()
+  @IsInt({ message: 'Target jam kerja harus berupa menit bulat' })
+  @Min(60, { message: 'Target jam kerja minimal 1 jam' })
+  @Max(960, { message: 'Target jam kerja maksimal 16 jam' })
+  dailyWorkMinutes?: number;
 }

@@ -1,14 +1,17 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   api,
   type Attendance,
   Button,
+  describeLocation,
   Dialog,
   ErrorAlert,
   formatDateTime,
   formatTime,
   Icon,
+  locationPrecision,
+  type PlaceResult,
   Spinner,
   StateMessage,
   TextAreaField,
@@ -65,23 +68,76 @@ type Phase =
   | { step: 'blocked'; reason: BlockReason }
   | { step: 'preview'; photo: Blob; url: string };
 
-function LocationNote({ state }: { state: LocationState }) {
-  const text = {
-    pending: 'Mengambil lokasi perangkat.',
-    ready: '',
-    denied: 'Lokasi tidak dibagikan. Absensi tetap bisa dikirim.',
-    unavailable: 'Lokasi tidak tersedia di perangkat ini. Absensi tetap bisa dikirim.',
-  }[state.status];
+/** Readable place name for the device position, as resolved by the backend. */
+function usePlace(state: LocationState) {
+  // An IP-based guess has no place worth naming; the server would say so anyway.
+  const location =
+    state.status === 'ready' && locationPrecision(state.location) !== 'unknown'
+      ? state.location
+      : null;
+  return useQuery({
+    // About 100 m: moving within the same street doesn't ask again.
+    queryKey: ['place', location?.latitude.toFixed(3), location?.longitude.toFixed(3)],
+    queryFn: () =>
+      api.get<PlaceResult>('/attendance/place', {
+        latitude: location!.latitude,
+        longitude: location!.longitude,
+        accuracy: location!.accuracyMeters ?? undefined,
+      }),
+    enabled: location !== null,
+    staleTime: Infinity,
+    retry: false,
+  });
+}
 
+function LocationNote({
+  state,
+  place,
+  placePending,
+  onRetry,
+}: {
+  state: LocationState;
+  place: string | null;
+  placePending: boolean;
+  onRetry: () => void;
+}) {
+  let text: string;
+  let canRetry = false;
+  if (state.status === 'pending') text = 'Mencari lokasi Anda';
+  else if (state.status === 'denied')
+    text =
+      'Lokasi tidak dibagikan. Izinkan lokasi untuk situs ini di pengaturan browser jika ingin menyertakannya. Absensi tetap bisa dikirim.';
+  else if (state.status === 'unavailable' && state.reason === 'unsupported')
+    text = 'Browser ini tidak bisa membagikan lokasi. Absensi tetap bisa dikirim.';
+  else if (state.status === 'unavailable') {
+    text = 'Browser belum berhasil mendapatkan lokasi. Absensi tetap bisa dikirim.';
+    canRetry = true;
+  } else if (locationPrecision(state.location) === 'unknown') {
+    text = 'Browser hanya bisa menebak lokasi dari koneksi internet. Absensi tetap bisa dikirim.';
+    canRetry = true;
+  } else if (placePending) text = 'Lokasi ditemukan, mencari nama tempat';
+  else text = `Lokasi: ${describeLocation(state.location, place)}`;
+
+  const busy = state.status === 'pending' || (state.status === 'ready' && placePending);
   return (
-    <p className="flex items-start gap-2 text-sm text-ink-soft">
-      <span className="mt-0.5">
-        {state.status === 'pending' ? <Spinner size={16} /> : <Icon name="pin" size={16} />}
-      </span>
-      {state.status === 'ready'
-        ? `Lokasi akan disertakan (akurasi sekitar ${state.location.accuracyMeters} m).`
-        : text}
-    </p>
+    <div className="flex items-start gap-2 text-sm text-ink-soft">
+      <span className="mt-0.5">{busy ? <Spinner size={16} /> : <Icon name="pin" size={16} />}</span>
+      <p>
+        {text}
+        {canRetry && (
+          <>
+            {' '}
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-2 hover:text-brand sm:min-h-0"
+            >
+              Coba lagi
+            </button>
+          </>
+        )}
+      </p>
+    </div>
   );
 }
 
@@ -93,10 +149,7 @@ interface CameraCaptureProps {
   onClose: () => void;
 }
 
-/**
- * Live camera only: there is no file input, so a photo can't come from the gallery.
- * Camera, then a preview with retake, then send.
- */
+/** Live camera only: there is no file input, so a photo can't come from the gallery. */
 export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
   const open = mode !== null;
   const { employee } = useCurrentUser();
@@ -108,9 +161,17 @@ export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
   const [videoReady, setVideoReady] = useState(false);
   const [note, setNote] = useState('');
   const location = useLocation(open);
+  const placeQuery = usePlace(location);
+  const placeNote = (
+    <LocationNote
+      state={location}
+      place={placeQuery.data?.place ?? null}
+      placePending={location.status === 'ready' && placeQuery.isLoading}
+      onRetry={location.retry}
+    />
+  );
 
-  // Bumped whenever the camera is stopped or restarted, so a permission prompt answered
-  // after the dialog closed doesn't leave the camera running with nothing showing it.
+  // Bumped on every stop or restart, so a late permission answer can't leave the camera on.
   const cameraRequest = useRef(0);
 
   const stopCamera = useCallback(() => {
@@ -201,9 +262,9 @@ export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
       `${employee.fullName} (${employee.employeeCode})`,
       `${LABELS[mode].stamp}, ${formatDateTime(now())} WIB`,
     ];
-    if (location.status === 'ready') {
-      const { latitude, longitude } = location.location;
-      lines.push(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+    // A place name people can read; coordinates would mean nothing on the photo.
+    if (location.status === 'ready' && placeQuery.data?.place) {
+      lines.push(describeLocation(location.location, placeQuery.data.place));
     }
     const photo = await captureStampedPhoto(video, lines);
     stopCamera();
@@ -282,7 +343,7 @@ export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
 
       {phase.step === 'live' && (
         <div className="flex flex-col gap-3">
-          {/* Mirrored like a mirror while framing; the saved photo is not mirrored. */}
+          {/* Mirrored while framing only; the saved photo is not mirrored. */}
           <video
             ref={videoRef}
             autoPlay
@@ -296,7 +357,7 @@ export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
             Pastikan wajah dan tempat kerja Anda terlihat jelas. Nama, NIK, dan waktu akan
             dicantumkan pada foto.
           </p>
-          <LocationNote state={location} />
+          {placeNote}
         </div>
       )}
 
@@ -308,7 +369,7 @@ export function CameraCapture({ mode, now, onClose }: CameraCaptureProps) {
             alt="Foto yang akan dikirim"
             className="aspect-[4/3] w-full rounded bg-ink object-contain"
           />
-          <LocationNote state={location} />
+          {placeNote}
           <TextAreaField
             label="Catatan (opsional)"
             rows={2}

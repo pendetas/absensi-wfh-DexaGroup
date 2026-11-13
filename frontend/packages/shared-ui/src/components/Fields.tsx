@@ -11,7 +11,6 @@ import { Icon } from './Icon';
 
 const CONTROL =
   'w-full rounded-md border border-line-strong bg-paper px-3 text-[15px] text-ink ' +
-  // A red edge and soft red halo show which field is being typed in.
   'transition duration-200 ease-out-soft hover:border-ink-soft ' +
   'focus:border-brand focus:ring-4 focus:ring-brand-tint focus:outline-none ' +
   // Full-strength grey: placeholders here carry real hints ("nama@dexa.test atau EMP001").
@@ -29,7 +28,6 @@ interface FieldShellProps {
   children: ReactNode;
 }
 
-/** Label above, control, then either the error or the hint below. */
 function FieldShell({ id, label, hint, error, hideLabel, className, children }: FieldShellProps) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>

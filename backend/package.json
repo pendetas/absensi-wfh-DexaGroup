@@ -9,6 +9,7 @@
     "build": "nest build api-gateway && nest build auth-service && nest build employee-service && nest build attendance-service",
     "format": "prettier --write \"{apps,libs,scripts,database,test}/**/*.ts\"",
     "lint": "eslint \"{apps,libs,scripts,database,test}/**/*.ts\" --fix",
+    "lint:check": "eslint \"{apps,libs,scripts,database,test}/**/*.ts\"",
     "start:api-gateway": "nest start api-gateway --watch",
     "start:auth-service": "nest start auth-service --watch",
     "start:employee-service": "nest start employee-service --watch",
@@ -50,7 +51,6 @@
     "typeorm": "^0.3.31"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",

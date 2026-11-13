@@ -1,7 +1,6 @@
 import { Skeleton } from '@dexa/shared-ui';
 import { ROW_GRID } from './MonitoringRow';
 
-/** The tiles, the arrival chart and list rows in their final shape, waiting for numbers. */
 export function SummarySkeleton() {
   return (
     <>
@@ -40,9 +39,9 @@ export function RowsSkeleton({ rows = 6 }: { rows?: number }) {
             <Skeleton className="h-4 w-36 max-w-full" />
             <Skeleton className="mt-2 h-3 w-28 max-w-full" />
           </div>
-          <Skeleton className="h-6 w-24 justify-self-end rounded md:order-last md:justify-self-start" />
-          <Skeleton className="col-span-2 col-start-2 h-2.5 rounded-full md:col-span-1 md:col-start-auto" />
-          <div className="col-span-2 col-start-2 md:col-span-1 md:col-start-auto">
+          <Skeleton className="col-start-2 h-6 w-24 rounded md:order-last md:col-start-auto" />
+          <Skeleton className="col-start-2 h-2.5 rounded-full md:col-start-auto" />
+          <div className="col-start-2 md:col-start-auto">
             <Skeleton className="h-4 w-28" />
             <Skeleton className="mt-1.5 h-3 w-20" />
           </div>

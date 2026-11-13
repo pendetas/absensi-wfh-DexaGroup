@@ -27,10 +27,7 @@ export function Spinner({ size = 18 }: { size?: number }) {
   );
 }
 
-/**
- * Whole-screen wait while the session is restored: the shape of the app shell, so the page
- * that follows appears in place instead of replacing a spinner.
- */
+/** Shaped like the app shell, so the restored page appears in place rather than after a spinner. */
 export function PageLoading({ label }: { label: string }) {
   return (
     <div role="status" aria-label={label} className="flex min-h-dvh flex-col">
@@ -54,10 +51,7 @@ export function PageLoading({ label }: { label: string }) {
   );
 }
 
-/**
- * A block standing in for content of the same size, so nothing jumps when the data arrives.
- * A light sweep moves across it while waiting; reduced motion leaves it still.
- */
+/** Sized like the content it replaces, so nothing jumps; reduced motion stops the sweep. */
 export function Skeleton({
   className,
   onBrand = false,

@@ -1,11 +1,11 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import {
   AccountPage,
-  ApiError,
   AppShell,
   AuthProvider,
   ChangePasswordPage,
+  createQueryClient,
   type NavItem,
   NotFoundPage,
   SessionGate,
@@ -18,16 +18,7 @@ import { TodayPage } from './pages/TodayPage';
 const HR_APP_URL =
   (import.meta.env.VITE_HR_APP_URL as string | undefined) ?? 'http://localhost:5174';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 15_000,
-      // A 4xx is an answer, not a glitch; only network and server errors are worth a retry.
-      retry: (failures, error) =>
-        failures < 2 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
-    },
-  },
-});
+const queryClient = createQueryClient();
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Hari ini', icon: 'clock', end: true },

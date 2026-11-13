@@ -7,6 +7,7 @@ import {
   AuthPhoto,
   Button,
   ButtonLink,
+  cn,
   errorMessages,
   formatClock,
   formatDuration,
@@ -16,6 +17,7 @@ import {
   MOTION,
   minutesBetween,
   minutesOfDayInJakarta,
+  minutesOfTime,
   Panel,
   Skeleton,
   SkeletonScreen,
@@ -26,14 +28,16 @@ import {
 } from '@dexa/shared-ui';
 import { CameraCapture, type CaptureMode } from '../components/CameraCapture';
 import { DayRuler } from '../components/DayRuler';
-import { WeekStrip } from '../components/WeekStrip';
+import { MonthSummary } from '../components/MonthSummary';
+import { WeekHours } from '../components/WeekHours';
 import { useServerClock } from '../lib/hooks';
 
-// One block: the red clock band on top, today's attendance below, sharing edges and padding
-// so every line of text starts at the same left edge.
+// Band and card share edges and padding, so every line of text starts at the same left edge.
 const BLOCK =
   'overflow-hidden rounded-2xl border border-line bg-paper shadow-[0_10px_30px_rgb(125_29_25/0.12)]';
 const BAND = 'bg-brand px-5 pt-5 pb-5 text-white';
+const LAYOUT =
+  'mx-auto flex max-w-xl flex-col gap-5 lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start';
 const CARD = 'px-5 py-5';
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -45,7 +49,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** What the ruler shows, in a sentence. */
+/** The ruler in words, for anyone who can't read it. */
 function rulerSentence(today: TodayAttendance, now: Date): string {
   const { attendance } = today;
   if (attendance) {
@@ -57,15 +61,13 @@ function rulerSentence(today: TodayAttendance, now: Date): string {
       : `Check-in ${formatTime(attendance.checkInAt)}, tepat waktu`;
   }
   if (!today.isWorkingDay) return 'Hari ini bukan hari kerja. Check-in tetap bisa.';
-  const start =
-    Number(today.workStartTime.slice(0, 2)) * 60 + Number(today.workStartTime.slice(3, 5));
+  const start = minutesOfTime(today.workStartTime);
   const gap = start - minutesOfDayInJakarta(now);
   if (gap > 0) return `${formatDuration(gap)} lagi sebelum jam masuk`;
   if (gap === 0) return 'Jam masuk sekarang';
   return `Lewat ${formatDuration(-gap)} dari jam masuk`;
 }
 
-/** Fades and lifts its content in when it first appears, e.g. right after a check-in. */
 function Reveal({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useGSAP(
@@ -99,13 +101,70 @@ function NotCheckedIn({ firstName, onCheckIn }: { firstName: string; onCheckIn: 
   );
 }
 
+/** Today's working time against the daily target, with when it will be reached. */
+function TodayProgress({
+  attendance,
+  now,
+  dailyWorkMinutes,
+}: {
+  attendance: Attendance;
+  now: Date;
+  dailyWorkMinutes: number;
+}) {
+  const end = attendance.checkOutAt ?? now;
+  const worked = minutesBetween(attendance.checkInAt, end);
+  const reached = worked >= dailyWorkMinutes;
+  const reachAt = new Date(new Date(attendance.checkInAt).getTime() + dailyWorkMinutes * 60_000);
+  const sentence = attendance.checkOutAt
+    ? reached
+      ? 'Target jam kerja hari ini tercapai.'
+      : `Kurang ${formatDuration(dailyWorkMinutes - worked)} dari target.`
+    : reached
+      ? 'Target tercapai. Jangan lupa check-out.'
+      : `Target tercapai pukul ${formatTime(reachAt)} WIB.`;
+
+  return (
+    <div className="rounded-xl bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <p className="text-sm font-semibold whitespace-nowrap text-ink-soft">
+          {attendance.checkOutAt ? 'Jam kerja hari ini' : 'Sudah bekerja'}
+        </p>
+        <p className="text-sm whitespace-nowrap text-ink-soft">
+          <span className="text-lg font-extrabold text-ink">{formatDuration(worked)}</span> /{' '}
+          {formatDuration(dailyWorkMinutes)}
+        </p>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Jam kerja hari ini dibanding target"
+        aria-valuemin={0}
+        aria-valuemax={dailyWorkMinutes}
+        aria-valuenow={Math.min(worked, dailyWorkMinutes)}
+        aria-valuetext={`${formatDuration(worked)} dari ${formatDuration(dailyWorkMinutes)}`}
+        className="mt-2 h-2.5 overflow-hidden rounded-full bg-line"
+      >
+        <div
+          className={cn(
+            'h-full rounded-full transition-[width] duration-1000 ease-linear',
+            reached ? 'bg-ok-mark' : attendance.checkOutAt ? 'bg-warn-mark' : 'bg-brand',
+          )}
+          style={{ width: `${Math.min(100, (worked / dailyWorkMinutes) * 100)}%` }}
+        />
+      </div>
+      <p className={cn('mt-1.5 text-sm', reached ? 'text-ok' : 'text-ink-soft')}>{sentence}</p>
+    </div>
+  );
+}
+
 function CheckedIn({
   attendance,
   now,
+  dailyWorkMinutes,
   onCheckOut,
 }: {
   attendance: Attendance;
   now: Date;
+  dailyWorkMinutes: number;
   onCheckOut: () => void;
 }) {
   return (
@@ -122,16 +181,13 @@ function CheckedIn({
           <Fact label="Check-out">
             {attendance.checkOutAt ? formatTime(attendance.checkOutAt) : 'Belum'}
           </Fact>
-          <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="col-span-2">
             <AttendanceStatusBadge status={attendance.status} attendance={attendance} />
-            <span className="text-sm text-ink-soft">
-              {attendance.checkOutAt
-                ? `Bekerja ${formatDuration(minutesBetween(attendance.checkInAt, attendance.checkOutAt))}`
-                : `Sudah ${formatDuration(minutesBetween(attendance.checkInAt, now))}`}
-            </span>
           </div>
         </dl>
       </div>
+
+      <TodayProgress attendance={attendance} now={now} dailyWorkMinutes={dailyWorkMinutes} />
 
       {attendance.checkOutAt ? (
         <>
@@ -154,13 +210,9 @@ function CheckedIn({
   );
 }
 
-/** The red band, card and week cells in their final shape, with placeholders inside. */
 function TodaySkeleton() {
   return (
-    <SkeletonScreen
-      label="Memuat absensi hari ini"
-      className="mx-auto flex max-w-xl flex-col gap-5"
-    >
+    <SkeletonScreen label="Memuat absensi hari ini" className={LAYOUT}>
       <div className={BLOCK}>
         <div className={BAND}>
           <Skeleton onBrand className="h-4 w-48" />
@@ -174,19 +226,30 @@ function TodaySkeleton() {
           <Skeleton className="mt-3 h-4 w-72 max-w-full" />
         </div>
       </div>
-      <div>
-        <Skeleton className="mb-2 h-4 w-24" />
-        <div className="grid grid-cols-5 gap-1.5">
-          {[0, 1, 2, 3, 4].map((day) => (
-            <Skeleton key={day} className="h-[58px] rounded-lg" />
-          ))}
+      <div className="flex flex-col gap-5">
+        <div className="rounded-2xl border border-line bg-paper px-5 py-5">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-3 h-8 w-48" />
+          <Skeleton className="mt-2 h-2 w-full rounded-full" />
+          <div className="mt-6 grid h-32 grid-cols-5 items-end gap-2">
+            {['h-1/2', 'h-3/4', 'h-2/3', 'h-1/3', 'h-1/4'].map((height) => (
+              <Skeleton key={height} className={`rounded-t-lg ${height}`} />
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-line bg-paper px-5 py-5">
+          <Skeleton className="h-4 w-44" />
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[0, 1, 2, 3].map((tile) => (
+              <Skeleton key={tile} className="h-[76px] rounded-xl" />
+            ))}
+          </div>
         </div>
       </div>
     </SkeletonScreen>
   );
 }
 
-/** The home screen: a clock on Dexa red, today's attendance and the one action that is next. */
 export function TodayPage() {
   const { employee } = useCurrentUser();
   const [capture, setCapture] = useState<CaptureMode | null>(null);
@@ -236,8 +299,9 @@ export function TodayPage() {
   const [hoursMinutes, seconds] = [formatClock(clock).slice(0, 5), formatClock(clock).slice(5)];
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-5">
-      <div className={BLOCK}>
+    <div className={LAYOUT}>
+      {/* Stays in view on wide screens while the week and month scroll beside it. */}
+      <div className={cn(BLOCK, 'lg:sticky lg:top-20')}>
         <div ref={bandRef} className={BAND}>
           <h1 className="font-semibold text-white/90">{formatLongDate(data.date)}</h1>
           <p className="text-[56px] leading-none font-extrabold tracking-tight">
@@ -262,6 +326,7 @@ export function TodayPage() {
               key={attendance.checkOutAt ? 'done' : 'in'}
               attendance={attendance}
               now={clock}
+              dailyWorkMinutes={data.dailyWorkMinutes}
               onCheckOut={() => setCapture('check-out')}
             />
           ) : (
@@ -274,7 +339,10 @@ export function TodayPage() {
         </section>
       </div>
 
-      <WeekStrip today={data.date} />
+      <div className="flex flex-col gap-5">
+        <WeekHours today={data.date} now={clock} dailyWorkMinutes={data.dailyWorkMinutes} />
+        <MonthSummary today={data.date} dailyWorkMinutes={data.dailyWorkMinutes} />
+      </div>
 
       <CameraCapture mode={capture} now={() => clock} onClose={() => setCapture(null)} />
     </div>

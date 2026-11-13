@@ -47,6 +47,10 @@ export class Attendance {
   @Column({ name: 'check_in_accuracy_m', type: 'int', unsigned: true, nullable: true })
   checkInAccuracyM: number | null;
 
+  // Looked up once at check-in, so HR reads a place instead of coordinates.
+  @Column({ name: 'check_in_place', type: 'varchar', length: 160, nullable: true })
+  checkInPlace: string | null;
+
   // Decided once at check-in; later changes to the work start time don't rewrite history.
   @Column({ type: 'enum', enum: AttendanceStatus })
   status: AttendanceStatus;
@@ -75,6 +79,9 @@ export class Attendance {
 
   @Column({ name: 'check_out_accuracy_m', type: 'int', unsigned: true, nullable: true })
   checkOutAccuracyM: number | null;
+
+  @Column({ name: 'check_out_place', type: 'varchar', length: 160, nullable: true })
+  checkOutPlace: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

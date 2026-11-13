@@ -34,8 +34,10 @@ export class AttendanceMonitoringController {
   }
 
   @Put('settings')
-  @ApiOperation({ summary: 'Change the work start time; applies from the next check-in' })
+  @ApiOperation({
+    summary: 'Change the work start time and daily hours target; applies from the next check-in',
+  })
   updateSettings(@Body() dto: UpdateAttendanceSettingsDto, @CurrentUser() actor: JwtPayload) {
-    return this.attendanceService.updateSettings(dto.workStartTime, actor);
+    return this.attendanceService.updateSettings(dto, actor);
   }
 }

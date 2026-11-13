@@ -34,10 +34,7 @@ const emptyValues = (): FormValues => ({
 
 const REQUIRED = 'Wajib diisi.';
 
-/**
- * Only checks that nothing is blank. The format rules (phone, email, name length) live on the
- * server, which answers with a specific message for each field it rejects.
- */
+/** Only checks for blanks; format rules live on the server, which returns a message per field. */
 function validate(values: FormValues): Partial<Record<keyof FormValues, string>> {
   const errors: Partial<Record<keyof FormValues, string>> = {};
   for (const field of ['fullName', 'email', 'phone', 'position', 'joinDate'] as const) {

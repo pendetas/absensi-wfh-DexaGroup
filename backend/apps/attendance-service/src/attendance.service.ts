@@ -23,6 +23,7 @@ import { evaluateCheckIn, isWorkingDay } from './attendance.rules';
 import { Clock } from './clock';
 import { Attendance } from './entities/attendance.entity';
 import { PhotoStorageService } from './photo-storage.service';
+import { PlaceService } from './place.service';
 import { SettingsService } from './settings.service';
 
 const ALREADY_CHECKED_IN = 'Anda sudah check-in hari ini';
@@ -49,6 +50,7 @@ export class AttendanceService {
     private readonly photoStorage: PhotoStorageService,
     private readonly clock: Clock,
     private readonly config: ConfigService,
+    private readonly placeService: PlaceService,
   ) {}
 
   async today(employeeId: number): Promise<TodayAttendance> {
@@ -63,6 +65,7 @@ export class AttendanceService {
       serverTime: now.toISOString(),
       isWorkingDay: isWorkingDay(local.dayOfWeek),
       workStartTime: settings.workStartTime,
+      dailyWorkMinutes: settings.dailyWorkMinutes,
       attendance: attendance ? this.toDto(attendance) : null,
     };
   }
@@ -90,6 +93,7 @@ export class AttendanceService {
 
     const { workStartTime } = await this.settingsService.get();
     const evaluation = evaluateCheckIn(local, workStartTime);
+    const place = location ? (await this.placeService.describe(location)).place : null;
     const photoPath = await this.photoStorage.save(photoBase64, local.date);
 
     try {
@@ -103,6 +107,7 @@ export class AttendanceService {
           checkInLatitude: location?.latitude ?? null,
           checkInLongitude: location?.longitude ?? null,
           checkInAccuracyM: location?.accuracyMeters ?? null,
+          checkInPlace: place,
           ...evaluation,
         }),
       );
@@ -133,6 +138,7 @@ export class AttendanceService {
     if (attendance.checkOutAt) throw rpcError(HttpStatus.CONFLICT, ALREADY_CHECKED_OUT);
 
     const photoPath = await this.photoStorage.save(photoBase64, local.date);
+    const place = location ? (await this.placeService.describe(location)).place : null;
     // The IS NULL condition makes a double submit update zero rows instead of overwriting.
     const result = await this.attendanceRepository.update(
       { id: attendance.id, checkOutAt: IsNull() },
@@ -143,6 +149,7 @@ export class AttendanceService {
         checkOutLatitude: location?.latitude ?? null,
         checkOutLongitude: location?.longitude ?? null,
         checkOutAccuracyM: location?.accuracyMeters ?? null,
+        checkOutPlace: place,
       },
     );
     if (!result.affected) {
@@ -235,6 +242,8 @@ export class AttendanceService {
         attendance.checkOutLongitude,
         attendance.checkOutAccuracyM,
       ),
+      checkInPlace: attendance.checkInPlace,
+      checkOutPlace: attendance.checkOutPlace,
     };
   }
 }

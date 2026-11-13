@@ -2,10 +2,7 @@ import type { ChangeEvent } from 'react';
 import { Button, SelectField } from '@dexa/shared-ui';
 import { useDepartments } from '../lib/employees';
 
-/**
- * Department dropdown for filters and the employee form. If the list can't be loaded it says
- * so and offers a retry, instead of showing an empty dropdown.
- */
+/** On a load failure, shows an error with retry instead of an empty dropdown. */
 export function DepartmentSelect({
   label,
   hideLabel,

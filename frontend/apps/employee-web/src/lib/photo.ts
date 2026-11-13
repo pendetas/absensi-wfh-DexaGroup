@@ -1,10 +1,7 @@
 const MAX_SIDE_PX = 1280;
 const JPEG_QUALITY = 0.85;
 
-/**
- * Takes the current video frame, scales it down, and writes `lines` onto a dark strip along
- * the bottom edge. The result is a JPEG of a few hundred kilobytes, well under the 2 MB limit.
- */
+/** Stamps `lines` along the bottom; the downscaled JPEG stays well under the 2 MB limit. */
 export function captureStampedPhoto(video: HTMLVideoElement, lines: string[]): Promise<Blob> {
   const scale = Math.min(1, MAX_SIDE_PX / Math.max(video.videoWidth, video.videoHeight));
   const width = Math.round(video.videoWidth * scale);

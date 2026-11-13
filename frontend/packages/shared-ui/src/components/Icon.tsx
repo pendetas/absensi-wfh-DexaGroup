@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 
-/**
- * A small hand-drawn set: only the glyphs these two apps use, on one 24px grid. Every icon sits
- * next to a text label, so the thin stroke keeps it a quiet pointer rather than the message.
- */
+/** Thin strokes on a 24px grid: every icon sits next to a text label that carries the meaning. */
 const GLYPHS = {
   camera: (
     <>
@@ -44,12 +41,6 @@ const GLYPHS = {
     </>
   ),
   refresh: <path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4" />,
-  search: (
-    <>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="M16 16l4.5 4.5" />
-    </>
-  ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
   chevronLeft: <path d="M14.5 6l-6 6 6 6" />,
   chevronRight: <path d="M9.5 6l6 6-6 6" />,
@@ -81,7 +72,6 @@ const GLYPHS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
-  external: <path d="M14 5h5v5M19 5l-8 8M11 7H5v12h12v-6" />,
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof GLYPHS;

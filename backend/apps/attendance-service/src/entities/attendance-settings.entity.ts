@@ -11,6 +11,10 @@ export class AttendanceSettings {
   @Column({ name: 'work_start_time', type: 'time' })
   workStartTime: string;
 
+  // Measured from check-in to check-out; shown to employees as a daily target.
+  @Column({ name: 'daily_work_minutes', type: 'smallint', unsigned: true, default: 480 })
+  dailyWorkMinutes: number;
+
   // Logical reference to employees.id, kept for audit.
   @Column({ name: 'updated_by_employee_id', type: 'int', nullable: true })
   updatedByEmployeeId: number | null;

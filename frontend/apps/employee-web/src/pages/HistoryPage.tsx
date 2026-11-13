@@ -1,13 +1,11 @@
 import {
   api,
   type AttendanceHistory,
+  MONTH_PAGE_SIZE,
   MonthHistory,
   PageHeader,
   useCurrentUser,
 } from '@dexa/shared-ui';
-
-// A month never has more than 31 records, so one page always holds it.
-const MONTH_PAGE_SIZE = 31;
 
 export function HistoryPage() {
   const { employee } = useCurrentUser();

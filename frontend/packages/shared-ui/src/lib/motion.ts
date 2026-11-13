@@ -15,7 +15,6 @@ reducedMotionQuery.addEventListener('change', applyMotionPreference);
 
 /** Durations and easing shared by every animation, so both apps move the same way. */
 export const MOTION = {
-  hover: 0.18,
   enter: 0.45,
   stagger: 0.05,
   ease: 'power3.out',

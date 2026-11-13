@@ -5,7 +5,7 @@ import { ErrorAlert } from '../components/Feedback';
 import { Checkbox, PasswordField, TextField } from '../components/Fields';
 import { useAuth } from './AuthProvider';
 
-/** Shared by both apps. It replaces the page in place, so a deep link survives the login. */
+/** Rendered in place of the page, so a deep link survives the login. */
 export function LoginPage({ appLabel, intro }: { appLabel?: string; intro: string }) {
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState('');

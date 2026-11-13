@@ -4,6 +4,16 @@ import helmet from 'helmet';
 
 /** HTTP behaviour shared by main.ts and the e2e tests, so tests exercise the real pipeline. */
 export function configureGateway(app: INestApplication): void {
+  // Behind nginx every request comes from the proxy; without this, all users share one rate limit.
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy) {
+    const hops = Number(trustProxy);
+    (app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set(
+      'trust proxy',
+      Number.isNaN(hops) ? trustProxy : hops,
+    );
+  }
+
   app.setGlobalPrefix('api');
   app.use(helmet());
   app.use(cookieParser());

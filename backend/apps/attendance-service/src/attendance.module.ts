@@ -7,6 +7,7 @@ import { Clock } from './clock';
 import { AttendanceSettings } from './entities/attendance-settings.entity';
 import { Attendance } from './entities/attendance.entity';
 import { PhotoStorageService } from './photo-storage.service';
+import { PlaceService } from './place.service';
 import { SettingsService } from './settings.service';
 
 @Module({
@@ -16,6 +17,6 @@ import { SettingsService } from './settings.service';
     TypeOrmModule.forFeature([Attendance, AttendanceSettings]),
   ],
   controllers: [AttendanceController],
-  providers: [AttendanceService, SettingsService, PhotoStorageService, Clock],
+  providers: [AttendanceService, SettingsService, PhotoStorageService, PlaceService, Clock],
 })
 export class AttendanceModule {}

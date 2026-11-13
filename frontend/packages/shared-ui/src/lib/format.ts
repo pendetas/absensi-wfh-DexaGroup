@@ -16,12 +16,6 @@ const clockFormat = new Intl.DateTimeFormat(LOCALE, {
 // Calendar dates (YYYY-MM-DD) carry no time, so they are formatted as UTC to avoid shifting.
 const longDateFormat = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'full', timeZone: 'UTC' });
 const mediumDateFormat = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium', timeZone: 'UTC' });
-const dayFormat = new Intl.DateTimeFormat(LOCALE, {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-  timeZone: 'UTC',
-});
 const monthFormat = new Intl.DateTimeFormat(LOCALE, {
   month: 'long',
   year: 'numeric',
@@ -44,18 +38,34 @@ export const formatDateTime = (instant: string | Date) => dateTimeFormat.format(
 export const formatLongDate = (date: string) => longDateFormat.format(asUtcDate(date));
 /** "10 Nov 2026" */
 export const formatDate = (date: string) => mediumDateFormat.format(asUtcDate(date));
-/** "Sel, 10 Nov" */
-export const formatDay = (date: string) => dayFormat.format(asUtcDate(date));
 /** "November 2026" from "2026-11" */
 export const formatMonth = (month: string) => monthFormat.format(asUtcDate(`${month}-01`));
 /** "09.00" from the API's "09:00" */
 export const formatWorkStart = (time: string) => time.replace(':', '.');
+/** 540 from "09:00" */
+export const minutesOfTime = (time: string) =>
+  Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+
+/** "09.05" from 545, a minute of the day. */
+export function formatMinutesOfDay(minutes: number): string {
+  const rounded = Math.round(minutes);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(Math.floor(rounded / 60))}.${pad(rounded % 60)}`;
+}
 
 export function formatDuration(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   if (hours === 0) return `${minutes} mnt`;
   return minutes === 0 ? `${hours} jam` : `${hours} jam ${minutes} mnt`;
+}
+
+/** "8j 12m", for narrow places such as chart labels. */
+export function formatDurationShort(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  return minutes === 0 ? `${hours}j` : `${hours}j ${minutes}m`;
 }
 
 export function minutesBetween(start: string | Date, end: string | Date): number {

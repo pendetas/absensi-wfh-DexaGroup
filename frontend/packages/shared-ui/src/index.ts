@@ -4,7 +4,9 @@ export * from './lib/api';
 export * from './lib/cn';
 export * from './lib/format';
 export * from './lib/hooks';
+export * from './lib/location';
 export * from './lib/motion';
+export * from './lib/query-client';
 export * from './lib/types';
 
 export * from './components/AppName';
@@ -16,6 +18,7 @@ export * from './components/Dialog';
 export * from './components/Feedback';
 export * from './components/Fields';
 export * from './components/Icon';
+export * from './components/LocationMap';
 export * from './components/Navigation';
 export * from './components/StatusBadge';
 export * from './components/Toast';

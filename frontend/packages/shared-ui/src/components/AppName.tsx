@@ -1,9 +1,6 @@
 import { cn } from '../lib/cn';
 
-/**
- * "Dexa Group | Absensi WFH", set in type only: no logo was supplied, so none is drawn.
- * The company name leads in Dexa red; the product name and the app label follow quietly.
- */
+/** Type only: no logo was supplied, so none is drawn. */
 export function AppName({
   appLabel,
   size = 'md',

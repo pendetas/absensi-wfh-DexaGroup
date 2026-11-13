@@ -19,7 +19,7 @@ import type { Response } from 'express';
 import { type JwtPayload, PhotoKind } from '@app/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AttendanceService } from './attendance.service';
-import { AttendanceProofDto, HistoryQueryDto } from './dto/attendance.dto';
+import { AttendanceProofDto, HistoryQueryDto, PlaceQueryDto } from './dto/attendance.dto';
 import { PhotoUpload, PhotoValidationPipe } from './photo-upload';
 
 /** Every logged-in user, HR admins included, records their own attendance here. */
@@ -62,6 +62,16 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Own attendance history (defaults to the current month)' })
   history(@CurrentUser() user: JwtPayload, @Query() query: HistoryQueryDto) {
     return this.attendanceService.history(user.employeeId, query);
+  }
+
+  @Get('place')
+  @ApiOperation({ summary: 'Readable place name for a device position (city, area)' })
+  place(@Query() query: PlaceQueryDto) {
+    return this.attendanceService.describePlace({
+      latitude: query.latitude,
+      longitude: query.longitude,
+      accuracyMeters: query.accuracy === undefined ? null : Math.round(query.accuracy),
+    });
   }
 
   @Get('settings')

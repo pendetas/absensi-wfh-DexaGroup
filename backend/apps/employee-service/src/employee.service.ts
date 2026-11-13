@@ -45,7 +45,7 @@ export class EmployeeService {
     ].filter(Boolean);
     if (eligibility.length > 0) {
       const eligible = `(${eligibility.join(' AND ')})`;
-      // e.g. a since-deactivated employee who has a record on the date HR is viewing.
+      // alwaysIncludeIds bypass the filters, e.g. a deactivated employee with a record that day.
       query.andWhere(
         alwaysIncludeIds?.length
           ? `(${eligible} OR employee.id IN (:...alwaysIncludeIds))`

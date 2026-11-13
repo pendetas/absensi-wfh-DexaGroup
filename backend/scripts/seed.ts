@@ -76,8 +76,7 @@ export async function seedSampleData(
   const employeeRepo = dataSource.getRepository(Employee);
   const userRepo = dataSource.getRepository(User);
 
-  // Find-then-save instead of repo.upsert(): on MySQL, TypeORM 0.3 upsert throws
-  // for existing rows because no insert ID comes back.
+  // Find-then-save: TypeORM's upsert() throws on MySQL for existing rows (no insert ID returned).
   const departmentIdByName = new Map<string, number>();
   for (const name of DEPARTMENTS) {
     const department =
