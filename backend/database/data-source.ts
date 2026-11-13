@@ -18,6 +18,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
   timezone: process.env.APP_TIMEZONE ?? '+07:00',
+  dateStrings: ['DATE'],
   entities: [Department, Employee, User, Session, Attendance, AttendanceSettings],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
   migrationsTableName: 'migrations',
